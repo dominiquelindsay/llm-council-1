@@ -1,17 +1,36 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import sidebarLogo from '../assets/sidebar_logo.png'; 
 
 const Sidebar = ({ 
   conversations, 
-  trashedConversations = [], // Restored
+  trashedConversations = [], 
   onSelectConversation, 
   currentConversationId, 
+  activeStreams = {}, // V9.9.6: Retrieving the live thread data
   onNewConversation,
-  onDeleteConversation, // Soft Delete
-  onRestoreConversation, // Restore logic
-  onPermanentDelete // Hard Delete
+  onDeleteConversation, 
+  onRestoreConversation, 
+  onPermanentDelete,
+  onRenameConversation 
 }) => {
   const [isLogoHovered, setIsLogoHovered] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [editValue, setEditValue] = useState('');
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    if (editingId && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [editingId]);
+
+  const handleEditSubmit = (id) => {
+    if (editValue.trim() !== '') {
+      onRenameConversation(id, editValue);
+    }
+    setEditingId(null);
+  };
 
   return (
     <div className="sidebar" style={{ 
@@ -28,6 +47,18 @@ const Sidebar = ({
         @keyframes neural-green-glow {
           0%, 100% { filter: drop-shadow(0 0 10px rgba(0, 255, 65, 0.3)); }
           50% { filter: drop-shadow(0 0 30px rgba(0, 255, 65, 0.8)); transform: scale(1.02); }
+        }
+        @keyframes deliberating-pulse {
+          0% { opacity: 0.3; text-shadow: 0 0 5px rgba(255, 176, 0, 0.2); }
+          50% { opacity: 1; text-shadow: 0 0 15px rgba(255, 176, 0, 0.9), 0 0 25px rgba(255, 176, 0, 0.4); }
+          100% { opacity: 0.3; text-shadow: 0 0 5px rgba(255, 176, 0, 0.2); }
+        }
+        .deliberating-badge {
+          color: #ffb000;
+          font-size: 8px;
+          font-weight: 900;
+          letter-spacing: 1px;
+          animation: deliberating-pulse 1.5s infinite ease-in-out;
         }
         .archive-card {
           background: #050508;
@@ -60,7 +91,7 @@ const Sidebar = ({
         }
       `}</style>
 
-      {/* COMMAND HEADER: THE HOME BUTTON */}
+      {/* COMMAND HEADER */}
       <div style={{ padding: '45px 30px 30px', textAlign: 'center', borderBottom: '1px solid #1c1c22' }}>
         <div 
           onClick={() => onSelectConversation(null)} 
@@ -115,7 +146,6 @@ const Sidebar = ({
       {/* SCROLLABLE CONTENT AREA */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
         
-        {/* ACTIVE ARCHIVES */}
         <div style={{ fontSize: '9px', color: '#444', letterSpacing: '3px', fontWeight: 'bold', marginBottom: '15px' }}>
           /// ACTIVE_ARCHIVES_INDEX
         </div>
@@ -127,22 +157,62 @@ const Sidebar = ({
             style={{ padding: '18px', position: 'relative' }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <div onClick={() => onSelectConversation(c.id)} style={{ flex: 1, cursor: 'pointer' }}>
-                <div style={{ 
-                  fontSize: '12px', 
-                  fontWeight: '900', 
-                  color: currentConversationId === c.id ? '#00f2ff' : '#00e5ffcc',
-                  letterSpacing: '0.5px'
-                }}>
-                  <span style={{ opacity: 0.5 }}>LOG_</span> {c.title?.toUpperCase() || 'NEW_DELIBERATION'}
-                </div>
-                <div style={{ fontSize: '9px', color: '#333', marginTop: '6px', fontFamily: 'monospace' }}>
+              <div onClick={() => { if(editingId !== c.id) onSelectConversation(c.id) }} style={{ flex: 1, cursor: 'pointer' }}>
+                
+                {editingId === c.id ? (
+                  <div style={{ display: 'flex', alignItems: 'center', marginBottom: '6px' }}>
+                    <span style={{ opacity: 0.5, color: '#00e5ffcc', fontSize: '12px', fontWeight: '900', marginRight: '4px' }}>LOG_</span>
+                    <input
+                      ref={inputRef}
+                      value={editValue}
+                      onChange={(e) => setEditValue(e.target.value)}
+                      onBlur={() => handleEditSubmit(c.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleEditSubmit(c.id);
+                        if (e.key === 'Escape') setEditingId(null);
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      style={{
+                        background: '#000',
+                        color: '#00f2ff',
+                        border: '1px solid #00f2ff',
+                        outline: 'none',
+                        fontSize: '12px',
+                        fontWeight: '900',
+                        fontFamily: 'monospace',
+                        width: 'calc(100% - 30px)',
+                        padding: '2px 5px',
+                        textTransform: 'uppercase',
+                        boxShadow: '0 0 10px rgba(0, 242, 255, 0.2)'
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <div style={{ 
+                    fontSize: '12px', 
+                    fontWeight: '900', 
+                    color: currentConversationId === c.id ? '#00f2ff' : '#00e5ffcc',
+                    letterSpacing: '0.5px'
+                  }}>
+                    <span style={{ opacity: 0.5 }}>LOG_</span> {c.title?.toUpperCase() || 'NEW_DELIBERATION'}
+                  </div>
+                )}
+
+                <div style={{ fontSize: '9px', color: '#333', marginTop: editingId === c.id ? '0' : '6px', fontFamily: 'monospace' }}>
                   2026.03.30 // SYSTEM_AUTH_EST
                 </div>
               </div>
               
               <div style={{ display: 'flex', gap: '10px', fontSize: '11px', fontFamily: 'monospace' }}>
-                <span style={{ color: '#444', cursor: 'help' }} title="Rename Archive">[E]</span>
+                <span 
+                  onClick={(e) => { 
+                    e.stopPropagation(); 
+                    setEditingId(c.id);
+                    setEditValue(c.title || '');
+                  }}
+                  style={{ color: '#00f2ff', cursor: 'pointer', opacity: 0.8 }} 
+                  title="Rename Archive"
+                >[E]</span>
                 <span 
                   onClick={(e) => { e.stopPropagation(); onDeleteConversation(c.id); }} 
                   style={{ color: '#ff3e3e', opacity: 0.7, cursor: 'pointer' }}
@@ -150,13 +220,21 @@ const Sidebar = ({
                 >[X]</span>
               </div>
             </div>
-            {currentConversationId === c.id && (
-              <div style={{ position: 'absolute', right: '55px', bottom: '15px', color: '#00ff41', fontSize: '8px', fontWeight: 'bold' }}>[ACTIVE]</div>
-            )}
+            
+            {/* V9.9.6: ACTIVE & DELIBERATING STATUS ROW */}
+            <div style={{ position: 'absolute', right: '55px', bottom: '15px', display: 'flex', gap: '10px', alignItems: 'center' }}>
+              {activeStreams?.[c.id]?.isThinking && (
+                <div className="deliberating-badge">[ DELIBERATING ]</div>
+              )}
+              {currentConversationId === c.id && (
+                <div style={{ color: '#00ff41', fontSize: '8px', fontWeight: 'bold' }}>[ACTIVE]</div>
+              )}
+            </div>
+
           </div>
         ))}
 
-        {/* QUARANTINE SECTOR (RESTORED) */}
+        {/* QUARANTINE SECTOR */}
         {trashedConversations.length > 0 && (
           <div style={{ marginTop: '40px' }}>
             <div style={{ fontSize: '9px', color: '#ff3e3e', letterSpacing: '3px', fontWeight: 'bold', marginBottom: '15px', opacity: 0.6 }}>
@@ -187,7 +265,6 @@ const Sidebar = ({
         )}
       </div>
 
-      {/* FOOTER */}
       <div style={{ padding: '20px 30px', borderTop: '1px solid #1c1c22', fontSize: '9px', color: '#222', fontFamily: 'monospace', letterSpacing: '2px' }}>
         ACCESS_LEVEL: DIRECTOR // ENCRYPTION: AES_256_SIGMA
       </div>

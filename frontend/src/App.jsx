@@ -6,193 +6,280 @@ import './App.css';
 
 function App() {
   const [conversations, setConversations] = useState([]);
-  const [currentConversationId, setCurrentConversationId] = useState(null);
-  const [currentConversation, setCurrentConversation] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [trashedIds, setTrashedIds] = useState(() => {
+    const saved = localStorage.getItem('llm_quarantine');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [trashedConversations, setTrashedConversations] = useState([]);
 
-  // Load conversations on mount
+  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+  const [currentConversationId, setCurrentConversationId] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    const chatParam = params.get('chat');
+    return (chatParam === 'null' || !chatParam) ? null : chatParam;
+  });
+  
+  const [currentConversation, setCurrentConversation] = useState(null);
+  const [isFetching, setIsFetching] = useState(false);
+
+  const [activeStreams, setActiveStreams] = useState({});
+
+  useEffect(() => { loadConversations(); }, []);
+
   useEffect(() => {
-    loadConversations();
+    const handlePopState = () => {
+      const params = new URLSearchParams(window.location.search);
+      const chatParam = params.get('chat');
+      setCurrentConversationId((chatParam === 'null' || !chatParam) ? null : chatParam);
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  // Load conversation details when selected
   useEffect(() => {
     if (currentConversationId) {
-      loadConversation(currentConversationId);
+      if (!activeStreams[currentConversationId]) {
+        setCurrentConversation(null); 
+        setIsFetching(true);
+        api.getConversation(currentConversationId)
+          .then(conv => { setCurrentConversation(conv); setIsFetching(false); })
+          .catch(err => { 
+            console.error('Uplink error:', err); 
+            setIsFetching(false); 
+            window.history.pushState({}, '', window.location.pathname);
+            setCurrentConversationId(null);
+          });
+      } else {
+         api.getConversation(currentConversationId)
+           .then(conv => setCurrentConversation(conv))
+           .catch(() => {});
+      }
+    } else {
+      setCurrentConversation(null);
     }
   }, [currentConversationId]);
 
   const loadConversations = async () => {
     try {
       const convs = await api.listConversations();
-      setConversations(convs);
-    } catch (error) {
-      console.error('Failed to load conversations:', error);
-    }
-  };
-
-  const loadConversation = async (id) => {
-    try {
-      const conv = await api.getConversation(id);
-      setCurrentConversation(conv);
-    } catch (error) {
-      console.error('Failed to load conversation:', error);
-    }
+      const currentTrashIds = JSON.parse(localStorage.getItem('llm_quarantine') || '[]');
+      setConversations(convs.filter(c => !currentTrashIds.includes(c.id)));
+      setTrashedConversations(convs.filter(c => currentTrashIds.includes(c.id)));
+    } catch (error) { console.error('Archive retrieval failed:', error); }
   };
 
   const handleNewConversation = async () => {
     try {
       const newConv = await api.createConversation();
-      setConversations([
-        { id: newConv.id, created_at: newConv.created_at, message_count: 0 },
-        ...conversations,
-      ]);
+      setConversations([{ id: newConv.id, title: "NEW DELIBERATION", created_at: new Date().toISOString() }, ...conversations]);
+      window.history.pushState({}, '', `?chat=${newConv.id}`);
       setCurrentConversationId(newConv.id);
-    } catch (error) {
-      console.error('Failed to create conversation:', error);
+    } catch (error) { 
+      console.error('Failed to initiate session:', error);
+      alert("UPLINK_FAILURE: Core refused to generate new session ID.");
     }
   };
 
-  const handleSelectConversation = (id) => {
-    setCurrentConversationId(id);
-  };
-
-  const handleSendMessage = async (content) => {
-    if (!currentConversationId) return;
-
-    setIsLoading(true);
+  const handleRenameConversation = async (id, newTitle) => {
+    if (!newTitle || newTitle.trim() === '') return;
+    const cleanTitle = newTitle.trim().toUpperCase();
+    
     try {
-      // Optimistically add user message to UI
-      const userMessage = { role: 'user', content };
-      setCurrentConversation((prev) => ({
-        ...prev,
-        messages: [...prev.messages, userMessage],
-      }));
-
-      // Create a partial assistant message that will be updated progressively
-      const assistantMessage = {
-        role: 'assistant',
-        stage1: null,
-        stage2: null,
-        stage3: null,
-        metadata: null,
-        loading: {
-          stage1: false,
-          stage2: false,
-          stage3: false,
-        },
-      };
-
-      // Add the partial assistant message
-      setCurrentConversation((prev) => ({
-        ...prev,
-        messages: [...prev.messages, assistantMessage],
-      }));
-
-      // Send message with streaming
-      await api.sendMessageStream(currentConversationId, content, (eventType, event) => {
-        switch (eventType) {
-          case 'stage1_start':
-            setCurrentConversation((prev) => {
-              const messages = [...prev.messages];
-              const lastMsg = messages[messages.length - 1];
-              lastMsg.loading.stage1 = true;
-              return { ...prev, messages };
-            });
-            break;
-
-          case 'stage1_complete':
-            setCurrentConversation((prev) => {
-              const messages = [...prev.messages];
-              const lastMsg = messages[messages.length - 1];
-              lastMsg.stage1 = event.data;
-              lastMsg.loading.stage1 = false;
-              return { ...prev, messages };
-            });
-            break;
-
-          case 'stage2_start':
-            setCurrentConversation((prev) => {
-              const messages = [...prev.messages];
-              const lastMsg = messages[messages.length - 1];
-              lastMsg.loading.stage2 = true;
-              return { ...prev, messages };
-            });
-            break;
-
-          case 'stage2_complete':
-            setCurrentConversation((prev) => {
-              const messages = [...prev.messages];
-              const lastMsg = messages[messages.length - 1];
-              lastMsg.stage2 = event.data;
-              lastMsg.metadata = event.metadata;
-              lastMsg.loading.stage2 = false;
-              return { ...prev, messages };
-            });
-            break;
-
-          case 'stage3_start':
-            setCurrentConversation((prev) => {
-              const messages = [...prev.messages];
-              const lastMsg = messages[messages.length - 1];
-              lastMsg.loading.stage3 = true;
-              return { ...prev, messages };
-            });
-            break;
-
-          case 'stage3_complete':
-            setCurrentConversation((prev) => {
-              const messages = [...prev.messages];
-              const lastMsg = messages[messages.length - 1];
-              lastMsg.stage3 = event.data;
-              lastMsg.loading.stage3 = false;
-              return { ...prev, messages };
-            });
-            break;
-
-          case 'title_complete':
-            // Reload conversations to get updated title
-            loadConversations();
-            break;
-
-          case 'complete':
-            // Stream complete, reload conversations list
-            loadConversations();
-            setIsLoading(false);
-            break;
-
-          case 'error':
-            console.error('Stream error:', event.message);
-            setIsLoading(false);
-            break;
-
-          default:
-            console.log('Unknown event type:', eventType);
-        }
+      await fetch(`${API_BASE}/api/conversations/${id}/title`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: cleanTitle })
       });
+      
+      setConversations(prev => prev.map(c => c.id === id ? { ...c, title: cleanTitle } : c));
+      if (currentConversationId === id) setCurrentConversation(prev => ({ ...prev, title: cleanTitle }));
+    } catch (error) { console.error('Rename failed:', error); }
+  };
+
+  const triggerAutoTitle = async (id, firstPrompt) => {
+    try {
+      const response = await fetch(`${API_BASE}/api/conversations/${id}/auto-title`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: firstPrompt })
+      });
+      const data = await response.json();
+      
+      if (data.success && data.title) {
+        setConversations(prev => prev.map(c => c.id === id ? { ...c, title: data.title } : c));
+        if (currentConversationId === id) {
+          setCurrentConversation(prev => ({ ...prev, title: data.title }));
+        }
+      }
     } catch (error) {
-      console.error('Failed to send message:', error);
-      // Remove optimistic messages on error
-      setCurrentConversation((prev) => ({
-        ...prev,
-        messages: prev.messages.slice(0, -2),
-      }));
-      setIsLoading(false);
+      console.error("AUTO_TITLE_ERROR:", error);
     }
   };
+
+  const handleSoftDelete = (id) => {
+    const conv = conversations.find(c => c.id === id);
+    if (!conv) return;
+    const newTrashIds = [...trashedIds, id];
+    setTrashedIds(newTrashIds);
+    localStorage.setItem('llm_quarantine', JSON.stringify(newTrashIds));
+    setConversations(prev => prev.filter(c => c.id !== id));
+    setTrashedConversations(prev => [conv, ...prev]);
+    if (currentConversationId === id) {
+      setCurrentConversationId(null);
+      window.history.pushState({}, '', window.location.pathname); 
+    }
+  };
+
+  const handleRestore = (id) => {
+    const conv = trashedConversations.find(c => c.id === id);
+    if (!conv) return;
+    const newTrashIds = trashedIds.filter(tId => tId !== id);
+    setTrashedIds(newTrashIds);
+    localStorage.setItem('llm_quarantine', JSON.stringify(newTrashIds));
+    setTrashedConversations(prev => prev.filter(c => c.id !== id));
+    setConversations(prev => [conv, ...prev]);
+  };
+
+  const handlePermanentDelete = async (id) => {
+    const newTrashIds = trashedIds.filter(tId => tId !== id);
+    setTrashedIds(newTrashIds);
+    localStorage.setItem('llm_quarantine', JSON.stringify(newTrashIds));
+    setTrashedConversations(prev => prev.filter(c => c.id !== id));
+    try { await api.deleteConversation(id); } catch (error) { loadConversations(); }
+  };
+
+  const handleClearHistory = async (id) => {
+    try { 
+      await api.clearMessages(id); 
+      setCurrentConversation(prev => ({ ...prev, messages: [] })); 
+      setActiveStreams(prev => {
+          const next = { ...prev };
+          delete next[id];
+          return next;
+      });
+    } catch (error) { console.error("Purge failed:", error); }
+  };
+
+  const handleSendMessage = async (content, files = [], tier = 'pro') => {
+    let targetId = currentConversationId;
+
+    if (targetId && activeStreams[targetId]?.isThinking) {
+       console.warn("This council is already deliberating.");
+       return;
+    }
+
+    if (!targetId) {
+      try {
+        const newConv = await api.createConversation();
+        setConversations(prev => [{ id: newConv.id, title: "NEW DELIBERATION", created_at: new Date().toISOString() }, ...prev]);
+        window.history.pushState({}, '', `?chat=${newConv.id}`);
+        setCurrentConversationId(newConv.id);
+        targetId = newConv.id;
+        setCurrentConversation({ id: newConv.id, title: "NEW DELIBERATION", messages: [] });
+      } catch (error) {
+        console.error('Failed to auto-initiate session:', error);
+        alert("UPLINK_FAILURE: Core refused to generate new session ID.");
+        return;
+      }
+    }
+
+    const baseMessages = activeStreams[targetId]?.messages || currentConversation?.messages || [];
+    const isFirstMessage = baseMessages.length === 0;
+
+    const imagePreviews = files
+      .filter(f => f.type.startsWith('image/'))
+      .map(f => URL.createObjectURL(f));
+
+    const userMessage = { 
+      role: 'user', 
+      content: `${content}\n\n[ OVERRIDE: TIER_${tier.toUpperCase()} ]`,
+      attachments: imagePreviews 
+    };
+
+    const assistantMessage = {
+      role: 'assistant', stage1: null, stage2: null, stage3: null,
+      loading: { stage1: false, stage2: false, stage3: false },
+      timers: { start: Date.now(), s1_start: null, s1_end: null, s2_start: null, s2_end: null, s3_start: null, s3_end: null, total: 0 }
+    };
+
+    const newMessages = [...baseMessages, userMessage, assistantMessage];
+
+    setActiveStreams(prev => ({
+      ...prev,
+      [targetId]: { isThinking: true, messages: newMessages }
+    }));
+
+    if (isFirstMessage && content) {
+      triggerAutoTitle(targetId, content); 
+    }
+
+    await api.sendMessageStream(targetId, content, files, tier, (eventType, event) => {
+      setActiveStreams(prev => {
+        const streamState = prev[targetId];
+        if (!streamState) return prev;
+
+        const messages = [...streamState.messages];
+        
+        if (messages.length === 0 || messages[messages.length - 1].role !== 'assistant') {
+           messages.push({
+             role: 'assistant', stage1: null, stage2: null, stage3: null,
+             loading: { stage1: false, stage2: false, stage3: false },
+             timers: { start: Date.now(), s1_start: null, s1_end: null, s2_start: null, s2_end: null, s3_start: null, s3_end: null, total: 0 }
+           });
+        }
+
+        const lastMsg = { ...messages[messages.length - 1] };
+        let isThinking = true;
+        
+        switch (eventType) {
+          case 'stage1_start': lastMsg.loading.stage1 = true; lastMsg.timers.s1_start = Date.now(); break;
+          case 'stage1_complete': lastMsg.stage1 = event.data; lastMsg.loading.stage1 = false; lastMsg.timers.s1_end = Date.now(); break;
+          case 'stage2_start': lastMsg.loading.stage2 = true; lastMsg.timers.s2_start = Date.now(); break;
+          case 'stage2_complete': lastMsg.stage2 = event.data; lastMsg.loading.stage2 = false; lastMsg.timers.s2_end = Date.now(); break;
+          case 'stage3_start': lastMsg.loading.stage3 = true; lastMsg.timers.s3_start = Date.now(); break;
+          case 'stage3_complete': 
+            lastMsg.stage3 = event.data; lastMsg.loading.stage3 = false; lastMsg.timers.s3_end = Date.now();
+            lastMsg.timers.total = (Date.now() - (lastMsg.timers.start || Date.now())) / 1000;
+            isThinking = false; break;
+          case 'complete': isThinking = false; break;
+          case 'error': isThinking = false; break;
+        }
+        
+        messages[messages.length - 1] = lastMsg;
+        return { ...prev, [targetId]: { isThinking, messages } };
+      });
+    });
+  };
+
+  const activeStream = activeStreams[currentConversationId];
+  const displayConversation = activeStream && currentConversation
+      ? { ...currentConversation, messages: activeStream.messages }
+      : activeStream
+        ? { id: currentConversationId, title: "ACTIVE DELIBERATION", messages: activeStream.messages }
+        : currentConversation;
+
+  const displayLoading = activeStream ? activeStream.isThinking : isFetching;
 
   return (
     <div className="app">
       <Sidebar
         conversations={conversations}
+        trashedConversations={trashedConversations}
         currentConversationId={currentConversationId}
-        onSelectConversation={handleSelectConversation}
+        activeStreams={activeStreams} /* V9.9.6: DATA FEED CONNECTED */
+        onSelectConversation={(id) => { window.history.pushState({}, '', `?chat=${id}`); setCurrentConversationId(id); }}
         onNewConversation={handleNewConversation}
+        onDeleteConversation={handleSoftDelete}
+        onRestoreConversation={handleRestore}
+        onPermanentDelete={handlePermanentDelete}
+        onRenameConversation={handleRenameConversation}
       />
       <ChatInterface
-        conversation={currentConversation}
+        conversation={displayConversation}
         onSendMessage={handleSendMessage}
-        isLoading={isLoading}
+        onClearHistory={handleClearHistory}
+        isLoading={displayLoading}
       />
     </div>
   );

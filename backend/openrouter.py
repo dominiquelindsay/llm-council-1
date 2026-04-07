@@ -49,7 +49,7 @@ async def query_model(
             }
 
     except Exception as e:
-        print(f"Error querying model {model}: {e}")
+        print(f"DEBUG: OpenRouter failed. Error: {e}")
         return None
 
 

@@ -19,3 +19,18 @@ data/
 frontend/node_modules/
 frontend/dist/
 frontend/.vite/
+
+# Ignore Python cache and virtual environments
+__pycache__/
+*.pyc
+.venv/
+venv/
+env/
+
+# Ignore Node.js massive module folders
+node_modules/
+dist/
+
+# Ignore your private API keys (NEVER upload these)
+.env
+config.py
