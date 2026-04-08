@@ -23,24 +23,31 @@ const HudButton = ({ label, onClick, color = '#00f2ff', isActive = false }) => (
   </button>
 );
 
+// V10.5.1: Decoupled Timer Engine
 const NeuralTimer = ({ timers = {}, loading = {} }) => {
-  const [elapsed, setElapsed] = useState("00:00.0");
+  const [elapsed, setElapsed] = useState("00.0s");
+  const [localStart] = useState(Date.now()); 
 
   useEffect(() => {
-    let interval;
-    if (loading.stage1 || loading.stage2 || loading.stage3) {
-      interval = setInterval(() => {
-        const diff = (Date.now() - (timers.start || Date.now())) / 1000;
-        setElapsed(diff.toFixed(1) + "s");
-      }, 100);
-    }
-    return () => clearInterval(interval);
-  }, [loading, timers.start]);
+    if (timers.total) return; // Stop ticking if the server says we are done
 
-  const getStageTime = (start, end) => {
-    if (!start) return "[ PENDING ]";
-    if (!end) return "[ IN_PROGRESS ]";
-    return ((end - start) / 1000).toFixed(1) + "s";
+    const interval = setInterval(() => {
+      const startTime = timers.start || localStart;
+      const diff = Math.max(0, (Date.now() - startTime) / 1000);
+      
+      let formattedDiff = diff.toFixed(1);
+      if (diff < 10) formattedDiff = "0" + formattedDiff; // Keep it clean (e.g. 05.2s)
+      
+      setElapsed(formattedDiff + "s");
+    }, 100);
+
+    return () => clearInterval(interval);
+  }, [timers.start, timers.total, localStart]);
+
+  const getStageTime = (start, end, isActive) => {
+    if (end) return ((end - start) / 1000).toFixed(1) + "s";
+    if (start || isActive) return "[ IN_PROGRESS ]";
+    return "[ PENDING ]";
   };
 
   const displayTotal = timers.total ? `${timers.total.toFixed(1)}s` : elapsed;
@@ -52,9 +59,9 @@ const NeuralTimer = ({ timers = {}, loading = {} }) => {
         <span style={{ color: '#00ff41' }}>TOTAL_ELAPSED: {displayTotal}</span>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px' }}>
-        <div>STAGE_1 (INDEPENDENT): <span style={{ color: loading.stage1 ? '#00ff41' : '#fff' }}>{getStageTime(timers.s1_start, timers.s1_end)}</span></div>
-        <div>STAGE_2 (PEER_REVIEW): <span style={{ color: loading.stage2 ? '#00ff41' : '#fff' }}>{getStageTime(timers.s2_start, timers.s2_end)}</span></div>
-        <div>STAGE_3 (SYNTHESIS): <span style={{ color: loading.stage3 ? '#00ff41' : '#fff' }}>{getStageTime(timers.s3_start, timers.s3_end)}</span></div>
+        <div>STAGE_1 (INDEPENDENT): <span style={{ color: loading.stage1 ? '#00ff41' : '#fff' }}>{getStageTime(timers.s1_start, timers.s1_end, loading.stage1)}</span></div>
+        <div>STAGE_2 (PEER_REVIEW): <span style={{ color: loading.stage2 ? '#00ff41' : '#fff' }}>{getStageTime(timers.s2_start, timers.s2_end, loading.stage2)}</span></div>
+        <div>STAGE_3 (SYNTHESIS): <span style={{ color: loading.stage3 ? '#00ff41' : '#fff' }}>{getStageTime(timers.s3_start, timers.s3_end, loading.stage3)}</span></div>
       </div>
     </div>
   );
@@ -103,13 +110,11 @@ const CinematicStage = ({ title, data, color }) => {
 
   const rawText = parsedData[activeModel] || "";
   
-  // V10.0: Multi-Media Parser (Handles Images & YouTube)
   const formatTextWithThumbnails = (text) => {
     if (typeof text !== 'string') return text;
     
     let formattedText = text.replace(/\\n/g, '\n').replace(/\\"/g, '"');
     
-    // Helper to extract <img> tags and format HTML backend artifacts
     const processImages = (str) => {
       let cleanStr = str
         .replace(/<hr\/>/g, '\n───────────────────────────────────────────\n')
@@ -141,7 +146,6 @@ const CinematicStage = ({ title, data, color }) => {
       });
     };
 
-    // Regex to intercept YouTube links
     const ytRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/g;
     const parts = formattedText.split(ytRegex);
     
@@ -210,7 +214,7 @@ const CinematicStage = ({ title, data, color }) => {
   );
 };
 
-const ChatInterface = ({ conversation, onSendMessage, onClearHistory, isLoading }) => {
+const ChatInterface = ({ conversation, onSendMessage, onClearHistory, isLoading, onCancel }) => {
   const [inputValue, setInputValue] = useState('');
   const [intelligenceTier, setIntelligenceTier] = useState('pro');
   const [showRadar, setShowRadar] = useState(false);
@@ -309,6 +313,11 @@ const ChatInterface = ({ conversation, onSendMessage, onClearHistory, isLoading 
             50% { opacity: 1; text-shadow: 0 0 35px rgba(0,255,65,0.9), 0 0 60px rgba(0,255,65,0.4); letter-spacing: 16px; }
             100% { opacity: 0.7; text-shadow: 0 0 15px rgba(0,255,65,0.4); letter-spacing: 14px; }
           }
+          @keyframes pulseRed {
+            0% { opacity: 0.8; box-shadow: 0 0 15px rgba(255,62,62,0.4); }
+            50% { opacity: 1; box-shadow: 0 0 35px rgba(255,62,62,0.9), 0 0 60px rgba(255,62,62,0.4); }
+            100% { opacity: 0.8; box-shadow: 0 0 15px rgba(255,62,62,0.4); }
+          }
           .cinematic-pulse {
             animation: coreBreathing 4s infinite ease-in-out;
             transition: all 0.5s ease;
@@ -322,7 +331,7 @@ const ChatInterface = ({ conversation, onSendMessage, onClearHistory, isLoading 
       </style>
 
       <div className="chat-header-bar" style={{ background: '#0e1217', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 30px', borderBottom: '1px solid #1c1c22', zIndex: 100 }}>
-        <div style={{ color: '#00f2ff', letterSpacing: '3px', fontSize: '11px', fontWeight: 'bold' }}>COMMAND_MODULE // V10.0 ARBITER</div>
+        <div style={{ color: '#00f2ff', letterSpacing: '3px', fontSize: '11px', fontWeight: 'bold' }}>COMMAND_MODULE // V10.5.1 ARBITER MATRIX</div>
         <div style={{ display: 'flex', gap: '12px', position: 'relative' }}>
           <HudButton label={showRadar ? "CLOSE_RADAR" : "SYSTEM_RADAR"} onClick={() => setShowRadar(!showRadar)} color={showRadar ? "#ff3e3e" : "#00f2ff"} />
           
@@ -331,7 +340,7 @@ const ChatInterface = ({ conversation, onSendMessage, onClearHistory, isLoading 
             {showExportMenu && (
               <div style={{ position: 'absolute', top: '100%', left: 0, minWidth: '150px', paddingTop: '8px', zIndex: 200 }}>
                 <div style={{ background: '#0e1217', border: '1px solid #00f2ff44', borderRadius: '4px', display: 'flex', flexDirection: 'column', boxShadow: '0 5px 15px rgba(0,0,0,0.5)', overflow: 'hidden' }}>
-                  {['pdf', 'docx', 'txt'].map(fmt => (
+                  {['pdf', 'docx', 'txt', 'csv', 'xlsx'].map(fmt => (
                     <button 
                       key={fmt} 
                       onClick={() => triggerExport(fmt)} 
@@ -383,14 +392,20 @@ const ChatInterface = ({ conversation, onSendMessage, onClearHistory, isLoading 
                   </div>
                 ) : (
                   <div>
+                    {isLoading && i === conversation.messages.length - 1 && !msg.stage1 && !msg.content && (
+                      <div style={{ color: '#00f2ff', fontSize: '12px', fontFamily: 'monospace', letterSpacing: '2px', padding: '20px', border: '1px dashed #00f2ff44', background: '#00f2ff0a', marginBottom: '15px', animation: 'coreBreathing 2s infinite' }}>
+                        [ ESTABLISHING NEURAL UPLINK... ]
+                      </div>
+                    )}
+
                     {msg.stage1 && <CinematicStage title="STAGE 1: INDEPENDENT ANALYSIS" data={msg.stage1} color="#a0a0b0" />}
                     {msg.stage2 && <CinematicStage title="STAGE 2: PEER REVIEW & CRITIQUE" data={msg.stage2} color="#ffb000" />}
-                    {(msg.stage3 || msg.content) && <CinematicStage title="STAGE 3: FINAL SYNTHESIS" data={msg.stage3 || msg.content} color="#00f2ff" />}
+                    {(msg.stage3 || msg.content) && <CinematicStage title="STAGE 3: THE ARBITER'S JUDGEMENT" data={msg.stage3 || msg.content} color="#00f2ff" />}
+                    
+                    {(msg.loading || msg.timers || (isLoading && i === conversation.messages.length - 1)) && (
+                      <NeuralTimer timers={msg.timers || {}} loading={msg.loading || {}} />
+                    )}
                   </div>
-                )}
-
-                {msg.role === 'assistant' && msg.timers && (msg.loading?.stage1 || msg.stage1) && (
-                  <NeuralTimer timers={msg.timers} loading={msg.loading || {}} />
                 )}
               </div>
             ))}
@@ -496,23 +511,48 @@ const ChatInterface = ({ conversation, onSendMessage, onClearHistory, isLoading 
             }} 
           />
 
-          <button 
-            type="submit" 
-            style={{ 
-              width: '200px', 
-              height: CONSOLE_HEIGHT, 
-              background: '#00f2ff', 
-              color: '#000', 
-              border: 'none', 
-              fontWeight: '900', 
-              letterSpacing: '3px', 
-              cursor: 'pointer', 
-              textTransform: 'uppercase', 
-              boxShadow: '0 0 20px rgba(0,242,255,0.3)' 
-            }}
-          >
-            TRANSMIT
-          </button>
+          {isLoading ? (
+            <button 
+              type="button" 
+              onClick={() => {
+                if (onCancel) onCancel();
+                else window.location.reload();
+              }}
+              style={{ 
+                width: '200px', 
+                height: CONSOLE_HEIGHT, 
+                background: '#ff3e3e', 
+                color: '#000', 
+                border: 'none', 
+                fontWeight: '900', 
+                letterSpacing: '3px', 
+                cursor: 'pointer', 
+                textTransform: 'uppercase', 
+                boxShadow: '0 0 20px rgba(255,62,62,0.3)',
+                animation: 'pulseRed 2s infinite'
+              }}
+            >
+              ABORT_UPLINK
+            </button>
+          ) : (
+            <button 
+              type="submit" 
+              style={{ 
+                width: '200px', 
+                height: CONSOLE_HEIGHT, 
+                background: '#00f2ff', 
+                color: '#000', 
+                border: 'none', 
+                fontWeight: '900', 
+                letterSpacing: '3px', 
+                cursor: 'pointer', 
+                textTransform: 'uppercase', 
+                boxShadow: '0 0 20px rgba(0,242,255,0.3)' 
+              }}
+            >
+              TRANSMIT
+            </button>
+          )}
         </form>
       </div>
     </div>

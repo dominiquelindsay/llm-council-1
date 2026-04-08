@@ -9,6 +9,7 @@ import re
 import os
 import logging
 import requests
+import csv
 import xml.sax.saxutils as saxutils
 
 # --- THE DOCUMENT TRANSLATORS ---
@@ -19,6 +20,8 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 import openpyxl
+from openpyxl import Workbook
+from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
 from reportlab.lib.pagesizes import LETTER
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak
 from reportlab.platypus import Image as RLImage
@@ -165,9 +168,33 @@ def add_page_numbers_to_docx(doc):
         run2._r.append(fldChar5)
         run2._r.append(fldChar6)
 
+def extract_markdown_tables(text: str) -> List[List[List[str]]]:
+    tables = []
+    current_table = []
+    in_table = False
+
+    for line in text.split('\n'):
+        line = line.strip()
+        if line.startswith('|') and line.endswith('|'):
+            in_table = True
+            if re.match(r'^\|[\s\-:]+\|.*\|$', line) and set(line.replace('|', '').replace(':', '').replace(' ', '')) == {'-'}:
+                continue
+            
+            cells = [re.sub(r'[\*\_]', '', cell.strip()) for cell in line.split('|')[1:-1]]
+            current_table.append(cells)
+        else:
+            if in_table:
+                tables.append(current_table)
+                current_table = []
+                in_table = False
+                
+    if in_table and current_table:
+        tables.append(current_table)
+        
+    return tables
+
 
 def parse_dossier_elements(messages):
-    """Slices the JSON into discrete rendering blocks for formatting."""
     elements = []
     for msg in messages:
         if msg.get('role') == 'user':
@@ -225,9 +252,75 @@ async def export_dossier(payload: dict = Body(...)):
     messages = payload.get('messages', [])
     date_str = datetime.now().strftime("%Y.%m.%d // %H:%M:%S")
     
+    if fmt in ['csv', 'xlsx']:
+        arbiter_text = ""
+        for msg in reversed(messages):
+            if msg.get('role') == 'assistant':
+                if 'stage3' in msg:
+                    resp = msg['stage3']
+                    arbiter_text = resp.get('response', '') if isinstance(resp, dict) else str(resp)
+                else:
+                    arbiter_text = str(msg.get('content', ''))
+                break
+                
+        tables = extract_markdown_tables(arbiter_text)
+        
+        if not tables:
+            tables = [[["ERROR", "DATA_MISSING"], ["SYSTEM_MSG", "No tabular data matrix found in the Arbiter's Final Synthesis."]]]
+            
+        main_table = tables[0] 
+        
+        if fmt == 'csv':
+            buffer = io.StringIO()
+            writer = csv.writer(buffer)
+            writer.writerows(main_table)
+            buffer.seek(0)
+            return Response(content=buffer.getvalue().encode('utf-8'), media_type="text/csv")
+            
+        if fmt == 'xlsx':
+            wb = Workbook()
+            ws = wb.active
+            ws.title = "Council Data Matrix"
+            
+            # V10.6 Cinematic Excel Styles
+            header_fill = PatternFill(start_color="0E1217", end_color="0E1217", fill_type="solid")
+            header_font = Font(name="Calibri", size=12, bold=True, color="00F2FF")
+            row_fill_1 = PatternFill(start_color="FFFFFF", end_color="FFFFFF", fill_type="solid")
+            row_fill_2 = PatternFill(start_color="F8F9FA", end_color="F8F9FA", fill_type="solid")
+            center_align = Alignment(horizontal="center", vertical="center", wrap_text=True)
+            left_align = Alignment(horizontal="left", vertical="center", wrap_text=True)
+            thin_border = Border(
+                left=Side(style='thin', color='DDDDDD'),
+                right=Side(style='thin', color='DDDDDD'),
+                top=Side(style='thin', color='DDDDDD'),
+                bottom=Side(style='thin', color='DDDDDD')
+            )
+
+            for r_idx, row in enumerate(main_table, 1):
+                ws.append(row)
+                for c_idx, cell_val in enumerate(row, 1):
+                    cell = ws.cell(row=r_idx, column=c_idx)
+                    cell.border = thin_border
+                    if r_idx == 1:
+                        cell.fill = header_fill
+                        cell.font = header_font
+                        cell.alignment = center_align
+                    else:
+                        cell.alignment = left_align if c_idx == 1 else center_align
+                        cell.fill = row_fill_1 if r_idx % 2 == 0 else row_fill_2
+
+            for column_cells in ws.columns:
+                length = max((len(str(cell.value)) for cell in column_cells if cell.value), default=10)
+                ws.column_dimensions[column_cells[0].column_letter].width = min(length + 4, 50)
+
+            ws.freeze_panes = "A2"
+
+            buffer = io.BytesIO()
+            wb.save(buffer)
+            buffer.seek(0)
+            return Response(content=buffer.getvalue(), media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
     elements = parse_dossier_elements(messages)
-    
-    # Resolving path to the frontend logo for cover page
     logo_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "frontend", "src", "assets", "sidebar_logo.png")
     
     if fmt == 'pdf':
@@ -239,7 +332,6 @@ async def export_dossier(payload: dict = Body(...)):
         style_n.leading = 14
         style_n.spaceAfter = 10
         
-        # Color Palettes & Cinematic Typography
         style_cover_title = ParagraphStyle('CoverTitle', fontName='Helvetica-Bold', fontSize=26, textColor='#000000', alignment=TA_CENTER, spaceAfter=20)
         style_cover_sub = ParagraphStyle('CoverSub', fontName='Helvetica-Bold', fontSize=12, textColor='#00f2ff', alignment=TA_CENTER, spaceAfter=8)
         style_cover_meta = ParagraphStyle('CoverMeta', fontName='Helvetica', fontSize=10, textColor='#888888', alignment=TA_CENTER)
@@ -250,22 +342,18 @@ async def export_dossier(payload: dict = Body(...)):
         
         style_suggestion = ParagraphStyle('Suggestion', fontName='Helvetica-Oblique', fontSize=11, textColor='#ffb000', leftIndent=20, rightIndent=20, spaceBefore=15)
         style_list = ParagraphStyle('List', parent=style_n, leftIndent=20)
-        
-        # V10.3 specific user styles
         style_user_header = ParagraphStyle('UserHeader', fontName='Helvetica-Bold', fontSize=12, textColor='#ffb000', alignment=TA_CENTER, spaceBefore=10, spaceAfter=10)
         style_user_body = ParagraphStyle('UserBody', fontName='Helvetica-Oblique', fontSize=11, textColor='#444444', alignment=TA_CENTER, leftIndent=40, rightIndent=40)
         
         story = []
         
-        # V10.3: The Cinematic Cover Page (Raised Title Block)
-        story.append(Spacer(1, 108)) # Reduced from 180 to 108 to lift an inch
+        story.append(Spacer(1, 108))
         story.append(Paragraph("COUNCIL_LOG", style_cover_sub))
         story.append(Paragraph(title.upper(), style_cover_title))
         story.append(Paragraph(f"INTELLIGENCE TIER: [ {tier} ]", style_cover_meta))
         story.append(Paragraph(f"EXTRACTED: {date_str}", style_cover_meta))
         story.append(Spacer(1, 40))
         
-        # Embed physical logo if exists
         if os.path.exists(logo_path):
             try:
                 img = RLImage(logo_path)
@@ -282,10 +370,8 @@ async def export_dossier(payload: dict = Body(...)):
             elif el['type'] == 'user_body':
                 story.append(Paragraph(saxutils.escape(el['content']), style_user_body))
                 story.append(Spacer(1, 30))
-                # Now we hard break for Stage 1
                 
             elif el['type'] == 'stage1_header':
-                # Only break if it's not the very first thing (though cover page guarantees it isn't)
                 story.append(PageBreak())
                 story.append(Paragraph(el['content'], style_cyan_header))
                 
@@ -344,8 +430,7 @@ async def export_dossier(payload: dict = Body(...)):
         doc = docx.Document()
         add_page_numbers_to_docx(doc)
         
-        # V10.3: Cinematic Cover Page for DOCX (Raised block)
-        doc.add_paragraph() # Single spacer instead of 4
+        doc.add_paragraph() 
         
         p_sub = doc.add_paragraph()
         p_sub.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -366,7 +451,7 @@ async def export_dossier(payload: dict = Body(...)):
         run_meta.font.size = Pt(10)
         run_meta.font.color.rgb = RGBColor(128, 128, 128)
         
-        doc.add_paragraph() # Spacer
+        doc.add_paragraph() 
         
         if os.path.exists(logo_path):
             try:
@@ -384,7 +469,7 @@ async def export_dossier(payload: dict = Body(...)):
                 p.alignment = WD_ALIGN_PARAGRAPH.CENTER
                 run = p.add_run(el['content'])
                 run.bold = True
-                run.font.color.rgb = RGBColor(255, 176, 0) # Burnt Orange
+                run.font.color.rgb = RGBColor(255, 176, 0)
                 
             elif el['type'] == 'user_body':
                 p = doc.add_paragraph(el['content'])
@@ -403,9 +488,9 @@ async def export_dossier(payload: dict = Body(...)):
                 run.bold = True
                 
                 if el['type'] == 'stage2_header':
-                    run.font.color.rgb = RGBColor(255, 176, 0) # Burnt Orange
+                    run.font.color.rgb = RGBColor(255, 176, 0)
                 else:
-                    run.font.color.rgb = RGBColor(0, 242, 255) # Cyan
+                    run.font.color.rgb = RGBColor(0, 242, 255)
                     
                 run.font.size = Pt(18) if el['type'] == 'arbiter_header' else Pt(14)
                 
@@ -417,7 +502,7 @@ async def export_dossier(payload: dict = Body(...)):
                 run = p.add_run(clean_text)
                 run.italic = True
                 run.bold = True
-                run.font.color.rgb = RGBColor(255, 176, 0) # Highlight in orange
+                run.font.color.rgb = RGBColor(255, 176, 0)
                 
             elif el['type'] == 'image':
                 try:
