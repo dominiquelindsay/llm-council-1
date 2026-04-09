@@ -237,7 +237,11 @@ def parse_dossier_elements(messages):
                     
     return elements
 
+# V10.6.1 Failsafe Added
 def clean_body_text(text: str) -> str:
+    if not text:
+        return ""
+    text = str(text)
     text = re.sub(r'<[^>]+>', '', text)
     text = re.sub(r'^### (.*)', r'\1', text, flags=re.MULTILINE)
     text = re.sub(r'^## (.*)', r'\1', text, flags=re.MULTILINE)
@@ -282,7 +286,6 @@ async def export_dossier(payload: dict = Body(...)):
             ws = wb.active
             ws.title = "Council Data Matrix"
             
-            # V10.6 Cinematic Excel Styles
             header_fill = PatternFill(start_color="0E1217", end_color="0E1217", fill_type="solid")
             header_font = Font(name="Calibri", size=12, bold=True, color="00F2FF")
             row_fill_1 = PatternFill(start_color="FFFFFF", end_color="FFFFFF", fill_type="solid")
