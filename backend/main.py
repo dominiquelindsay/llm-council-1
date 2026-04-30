@@ -192,6 +192,9 @@ def parse_dossier_elements(messages):
                 if isinstance(resp, dict):
                     resp = resp.get('response', '')
                 
+                # Default to empty string if somehow response is None
+                resp = resp or ""
+                
                 suggestion_split = re.split(r'(?is)(SUGGESTED PROMPT IMPROVEMENT:.*)', resp, maxsplit=1)
                 main_resp = suggestion_split[0]
                 suggestion_text = suggestion_split[1] if len(suggestion_split) > 1 else ""
@@ -210,7 +213,10 @@ def parse_dossier_elements(messages):
                     
     return elements
 
-def clean_body_text(text: str) -> str:
+def clean_body_text(text: Optional[str]) -> str:
+    """Robust text cleaning. Handles NoneType inputs gracefully."""
+    if text is None:
+        return ""
     text = re.sub(r'<[^>]+>', '', text)
     text = re.sub(r'^### (.*)', r'\1', text, flags=re.MULTILINE)
     text = re.sub(r'^## (.*)', r'\1', text, flags=re.MULTILINE)
@@ -282,10 +288,8 @@ async def export_dossier(payload: dict = Body(...)):
             elif el['type'] == 'user_body':
                 story.append(Paragraph(saxutils.escape(el['content']), style_user_body))
                 story.append(Spacer(1, 30))
-                # Now we hard break for Stage 1
                 
             elif el['type'] == 'stage1_header':
-                # Only break if it's not the very first thing (though cover page guarantees it isn't)
                 story.append(PageBreak())
                 story.append(Paragraph(el['content'], style_cyan_header))
                 
@@ -345,7 +349,7 @@ async def export_dossier(payload: dict = Body(...)):
         add_page_numbers_to_docx(doc)
         
         # V10.3: Cinematic Cover Page for DOCX (Raised block)
-        doc.add_paragraph() # Single spacer instead of 4
+        doc.add_paragraph() 
         
         p_sub = doc.add_paragraph()
         p_sub.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -366,7 +370,7 @@ async def export_dossier(payload: dict = Body(...)):
         run_meta.font.size = Pt(10)
         run_meta.font.color.rgb = RGBColor(128, 128, 128)
         
-        doc.add_paragraph() # Spacer
+        doc.add_paragraph() 
         
         if os.path.exists(logo_path):
             try:
@@ -384,7 +388,7 @@ async def export_dossier(payload: dict = Body(...)):
                 p.alignment = WD_ALIGN_PARAGRAPH.CENTER
                 run = p.add_run(el['content'])
                 run.bold = True
-                run.font.color.rgb = RGBColor(255, 176, 0) # Burnt Orange
+                run.font.color.rgb = RGBColor(255, 176, 0)
                 
             elif el['type'] == 'user_body':
                 p = doc.add_paragraph(el['content'])
@@ -403,9 +407,9 @@ async def export_dossier(payload: dict = Body(...)):
                 run.bold = True
                 
                 if el['type'] == 'stage2_header':
-                    run.font.color.rgb = RGBColor(255, 176, 0) # Burnt Orange
+                    run.font.color.rgb = RGBColor(255, 176, 0)
                 else:
-                    run.font.color.rgb = RGBColor(0, 242, 255) # Cyan
+                    run.font.color.rgb = RGBColor(0, 242, 255)
                     
                 run.font.size = Pt(18) if el['type'] == 'arbiter_header' else Pt(14)
                 
@@ -417,7 +421,7 @@ async def export_dossier(payload: dict = Body(...)):
                 run = p.add_run(clean_text)
                 run.italic = True
                 run.bold = True
-                run.font.color.rgb = RGBColor(255, 176, 0) # Highlight in orange
+                run.font.color.rgb = RGBColor(255, 176, 0)
                 
             elif el['type'] == 'image':
                 try:
