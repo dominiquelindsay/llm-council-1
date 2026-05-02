@@ -3,7 +3,8 @@
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+# Actively override any stale system variables with the latest from the .env vault
+load_dotenv(override=True)
 
 # --- API CREDENTIALS ---
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
@@ -19,7 +20,7 @@ FAST_COUNCIL = [
     "openai/gpt-5.4-mini", 
     "anthropic/claude-haiku-4.5",
     "x-ai/grok-3-mini",        # Corrected Speed ID
-    "perplexity/sonar",         # Corrected Unified ID
+    "perplexity/sonar",        # Corrected Unified ID
     "qwen/qwen-2.5-vl-7b-instruct" # Upgraded Multi-Vision
 ]
 
@@ -41,11 +42,24 @@ OMEGA_COUNCIL = [
     "qwen/qwen-2.5-vl-72b-instruct"
 ]
 
+# --- THE ROUTING MATRIX ---
 TIERS = {
-    "fast": { "council": FAST_COUNCIL, "chairman": "google/gemini-3-flash-preview" },
-    "pro": { "council": PRO_COUNCIL, "chairman": CHAIRMAN_ENV },
-    "omega": { "council": OMEGA_COUNCIL, "chairman": CHAIRMAN_ENV },
-    "god": { "council": OMEGA_COUNCIL, "chairman": "openai/gpt-5.4-pro" }
+    "fast": {
+        "council": FAST_COUNCIL, 
+        "chairman": "google/gemini-3-flash-preview"
+    },
+    "pro": {
+        "council": PRO_COUNCIL, 
+        "chairman": CHAIRMAN_ENV
+    },
+    "omega": {
+        "council": OMEGA_COUNCIL, 
+        "chairman": CHAIRMAN_ENV
+    },
+    "god": {
+        "council": OMEGA_COUNCIL, 
+        "chairman": "openai/gpt-5.4-pro"
+    }
 }
 
 # --- PERFORMANCE PARAMETERS ---

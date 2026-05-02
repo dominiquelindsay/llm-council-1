@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
 import Splash from './Splash';
 import Radar from './Radar';
 
@@ -137,6 +138,22 @@ const CinematicStage = ({ title, data, color }) => {
             />
           );
         }
+        
+        // V11: UI Highlight for Arbiter's Suggestion Block
+        const suggestionParts = part.split(/(SUGGESTED PROMPT IMPROVEMENT:[\s\S]*)/g);
+        if (suggestionParts.length > 1) {
+          return suggestionParts.map((sPart, j) => {
+            if (sPart.startsWith('SUGGESTED PROMPT IMPROVEMENT:')) {
+              return (
+                <div key={`sugg-${i}-${j}`} style={{ background: 'rgba(255, 176, 0, 0.1)', borderLeft: '3px solid #ffb000', padding: '12px 18px', marginTop: '20px', fontFamily: 'monospace', fontSize: '13px', color: '#ffb000' }}>
+                  <ReactMarkdown>{sPart.replace('SUGGESTED PROMPT IMPROVEMENT:', '**SUGGESTED PROMPT IMPROVEMENT:**\n')}</ReactMarkdown>
+                </div>
+              );
+            }
+            return sPart;
+          });
+        }
+        
         return part;
       });
     };
@@ -203,8 +220,14 @@ const CinematicStage = ({ title, data, color }) => {
           ))}
         </div>
       )}
-      <div style={{ padding: '25px', color: '#e0e0e0', fontSize: '14px', lineHeight: '1.7', whiteSpace: 'pre-wrap' }}>
-        {formattedOutput}
+      <div className="markdown-content" style={{ padding: '25px', color: '#e0e0e0', fontSize: '14px', lineHeight: '1.7' }}>
+        {Array.isArray(formattedOutput) ? (
+          formattedOutput.map((item, i) => (
+             typeof item === 'string' ? <ReactMarkdown key={i}>{item}</ReactMarkdown> : item
+          ))
+        ) : (
+          <ReactMarkdown>{formattedOutput}</ReactMarkdown>
+        )}
       </div>
     </div>
   );
@@ -213,8 +236,10 @@ const CinematicStage = ({ title, data, color }) => {
 const ChatInterface = ({ conversation, onSendMessage, onClearHistory, isLoading }) => {
   const [inputValue, setInputValue] = useState('');
   const [intelligenceTier, setIntelligenceTier] = useState('pro');
+  const [visualEngine, setVisualEngine] = useState('dall-e-3');
   const [showRadar, setShowRadar] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
+  const [showEngineMenu, setShowEngineMenu] = useState(false);
   const [stagedFiles, setStagedFiles] = useState([]);
   const [isDragging, setIsDragging] = useState(false); 
   
@@ -259,7 +284,7 @@ const ChatInterface = ({ conversation, onSendMessage, onClearHistory, isLoading 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!inputValue.trim() && stagedFiles.length === 0) return;
-    if (onSendMessage) onSendMessage(inputValue, stagedFiles, intelligenceTier);
+    if (onSendMessage) onSendMessage(inputValue, stagedFiles, intelligenceTier, visualEngine);
     setInputValue('');
     setStagedFiles([]);
   };
@@ -279,6 +304,14 @@ const ChatInterface = ({ conversation, onSendMessage, onClearHistory, isLoading 
       });
       if (!response.ok) throw new Error("UPLINK_TIMEOUT");
       
+      if (format === 'gmail') {
+        const data = await response.json();
+        const mailtoUrl = `https://mail.google.com/mail/?view=cm&fs=1&su=${encodeURIComponent(data.subject)}&body=${encodeURIComponent(data.body)}`;
+        window.open(mailtoUrl, '_blank');
+        setShowExportMenu(false);
+        return;
+      }
+
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -299,11 +332,47 @@ const ChatInterface = ({ conversation, onSendMessage, onClearHistory, isLoading 
     }
   };
 
+  const triggerEmailExport = async () => {
+    if (!conversation?.messages?.length) return alert("NO_DATA_TO_EXTRACT");
+    const targetEmail = prompt("Enter destination email address:");
+    if (!targetEmail) return;
+
+    try {
+      const response = await fetch(`${API_BASE}/api/export/email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          target_email: targetEmail,
+          title: conversation.title || "UNNAMED_SESSION",
+          messages: conversation.messages,
+          tier: intelligenceTier
+        })
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        alert("[ SUCCESS ] Dossier transmitted to: " + targetEmail);
+      } else {
+        alert("[ FAILURE ] " + (data.detail || "Transmission error."));
+      }
+      setShowExportMenu(false);
+    } catch (err) {
+      alert("EXPORT_PROTOCOL_CRITICAL_FAILURE: Backend unreachable.");
+    }
+  };
+
   return (
     <div className="chat-interface" style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#020204', position: 'relative', overflow: 'hidden' }}>
       
       <style>
         {`
+          .markdown-content h1, .markdown-content h2, .markdown-content h3, .markdown-content h4 {
+            font-size: 14px;
+            margin-top: 15px;
+            margin-bottom: 5px;
+            color: #00f2ff;
+            text-transform: uppercase;
+          }
           @keyframes coreBreathing {
             0% { opacity: 0.7; text-shadow: 0 0 15px rgba(0,255,65,0.4); letter-spacing: 14px; }
             50% { opacity: 1; text-shadow: 0 0 35px rgba(0,255,65,0.9), 0 0 60px rgba(0,255,65,0.4); letter-spacing: 16px; }
@@ -331,15 +400,36 @@ const ChatInterface = ({ conversation, onSendMessage, onClearHistory, isLoading 
             {showExportMenu && (
               <div style={{ position: 'absolute', top: '100%', left: 0, minWidth: '150px', paddingTop: '8px', zIndex: 200 }}>
                 <div style={{ background: '#0e1217', border: '1px solid #00f2ff44', borderRadius: '4px', display: 'flex', flexDirection: 'column', boxShadow: '0 5px 15px rgba(0,0,0,0.5)', overflow: 'hidden' }}>
-                  {['pdf', 'docx', 'txt'].map(fmt => (
+                  {['pdf', 'docx', 'txt', 'gmail', 'email_dossier'].map(fmt => (
                     <button 
                       key={fmt} 
-                      onClick={() => triggerExport(fmt)} 
+                      onClick={() => fmt === 'email_dossier' ? triggerEmailExport() : triggerExport(fmt)} 
                       onMouseEnter={(e) => e.target.style.background = '#00f2ff22'}
                       onMouseLeave={(e) => e.target.style.background = 'transparent'}
                       style={{ background: 'transparent', color: '#00f2ff', border: 'none', padding: '12px 15px', fontSize: '10px', cursor: 'pointer', textAlign: 'left', borderBottom: '1px solid #1c1c22', transition: 'background 0.2s', fontWeight: 'bold' }}
                     >
-                      &gt; DOWNLOAD_.{fmt.toUpperCase()}
+                      &gt; {fmt === 'gmail' ? 'OPEN_IN_GMAIL' : fmt === 'email_dossier' ? 'TRANSMIT_VIA_SMTP' : `DOWNLOAD_.${fmt.toUpperCase()}`}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div onMouseEnter={() => setShowEngineMenu(true)} onMouseLeave={() => setShowEngineMenu(false)} style={{ position: 'relative' }}>
+            <HudButton label={`ENGINE: ${visualEngine.toUpperCase()}`} isActive={showEngineMenu} color="#bc13fe" />
+            {showEngineMenu && (
+              <div style={{ position: 'absolute', top: '100%', left: 0, minWidth: '180px', paddingTop: '8px', zIndex: 200 }}>
+                <div style={{ background: '#0e1217', border: '1px solid #bc13fe44', borderRadius: '4px', display: 'flex', flexDirection: 'column', boxShadow: '0 5px 15px rgba(0,0,0,0.5)', overflow: 'hidden' }}>
+                  {['dall-e-3'].map(engine => (
+                    <button 
+                      key={engine} 
+                      onClick={() => { setVisualEngine(engine); setShowEngineMenu(false); }} 
+                      onMouseEnter={(e) => e.target.style.background = '#bc13fe22'}
+                      onMouseLeave={(e) => e.target.style.background = 'transparent'}
+                      style={{ background: 'transparent', color: '#bc13fe', border: 'none', padding: '12px 15px', fontSize: '10px', cursor: 'pointer', textAlign: 'left', borderBottom: '1px solid #1c1c22', transition: 'background 0.2s', fontWeight: 'bold' }}
+                    >
+                      &gt; {engine === 'dall-e-3' ? 'OPENAI (DALL-E 3)' : engine.toUpperCase()}
                     </button>
                   ))}
                 </div>

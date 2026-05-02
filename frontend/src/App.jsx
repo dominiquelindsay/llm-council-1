@@ -2,9 +2,11 @@ import { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import ChatInterface from './components/ChatInterface';
 import { api } from './api';
+import { useCouncil } from './CouncilContext';
 import './App.css';
 
 function App() {
+  const { councilConfig } = useCouncil();
   const [conversations, setConversations] = useState([]);
   const [trashedIds, setTrashedIds] = useState(() => {
     const saved = localStorage.getItem('llm_quarantine');
@@ -161,7 +163,7 @@ function App() {
     } catch (error) { console.error("Purge failed:", error); }
   };
 
-  const handleSendMessage = async (content, files = [], tier = 'pro') => {
+  const handleSendMessage = async (content, files = [], tier = 'pro', visualEngine = 'dall-e-3') => {
     let targetId = currentConversationId;
 
     if (targetId && activeStreams[targetId]?.isThinking) {
@@ -249,7 +251,7 @@ function App() {
         messages[messages.length - 1] = lastMsg;
         return { ...prev, [targetId]: { isThinking, messages } };
       });
-    });
+    }, councilConfig[tier].council, councilConfig[tier].chairman, visualEngine);
   };
 
   const activeStream = activeStreams[currentConversationId];

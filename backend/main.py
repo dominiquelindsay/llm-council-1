@@ -10,6 +10,21 @@ import os
 import logging
 import requests
 import xml.sax.saxutils as saxutils
+import smtplib
+from email.message import EmailMessage
+from openai import AsyncOpenAI
+
+from dotenv import load_dotenv
+env_path = os.path.join(os.path.dirname(__file__), '..', '.env')
+load_dotenv(dotenv_path=env_path)
+
+print(f'[ SYSTEM ] Master Vault Found: {os.path.exists(env_path)}')
+print(f'[ SYSTEM ] Gmail User Loaded: {bool(os.getenv("GMAIL_SENDER"))}')
+print(f'[ SYSTEM ] Gmail App Pass Loaded: {bool(os.getenv("GMAIL_APP_PASSWORD"))}')
+print(f'[ SYSTEM ] OpenAI Core Loaded: {bool(os.getenv("OPENAI_API_KEY"))}')
+
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+openai_client = AsyncOpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
 
 # --- THE DOCUMENT TRANSLATORS ---
 import PyPDF2
@@ -211,11 +226,133 @@ def parse_dossier_elements(messages):
     return elements
 
 def clean_body_text(text: str) -> str:
+    if text is None:
+        return ""
     text = re.sub(r'<[^>]+>', '', text)
     text = re.sub(r'^### (.*)', r'\1', text, flags=re.MULTILINE)
     text = re.sub(r'^## (.*)', r'\1', text, flags=re.MULTILINE)
     text = re.sub(r'^# (.*)', r'\1', text, flags=re.MULTILINE)
     return text.strip()
+
+def generate_docx_in_memory(title, tier, date_str, elements, logo_path):
+    doc = docx.Document()
+    add_page_numbers_to_docx(doc)
+    
+    doc.add_paragraph() 
+    
+    p_sub = doc.add_paragraph()
+    p_sub.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    run_sub = p_sub.add_run("COUNCIL_LOG")
+    run_sub.font.size = Pt(12)
+    run_sub.font.color.rgb = RGBColor(0, 242, 255)
+    run_sub.bold = True
+    
+    p_title = doc.add_paragraph()
+    p_title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    run_title = p_title.add_run(title.upper())
+    run_title.font.size = Pt(28)
+    run_title.bold = True
+    
+    p_meta = doc.add_paragraph()
+    p_meta.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    run_meta = p_meta.add_run(f"INTELLIGENCE TIER: [ {tier} ]\nEXTRACTED: {date_str}")
+    run_meta.font.size = Pt(10)
+    run_meta.font.color.rgb = RGBColor(128, 128, 128)
+    
+    doc.add_paragraph() 
+    
+    if os.path.exists(logo_path):
+        try:
+            p_logo = doc.add_paragraph()
+            p_logo.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            r_logo = p_logo.add_run()
+            r_logo.add_picture(logo_path, width=Inches(3.0))
+            doc.add_paragraph()
+        except Exception as e:
+            logger.warning(f"Could not load cover logo: {e}")
+    
+    for idx, el in enumerate(elements):
+        content = el.get('content', '')
+        if el['type'] == 'user_header':
+            p = doc.add_paragraph()
+            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            run = p.add_run(content)
+            run.bold = True
+            run.font.color.rgb = RGBColor(255, 176, 0)
+            
+        elif el['type'] == 'user_body':
+            p = doc.add_paragraph(content)
+            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            p.paragraph_format.left_indent = Inches(0.8)
+            p.paragraph_format.right_indent = Inches(0.8)
+            for run in p.runs:
+                run.italic = True
+                run.font.color.rgb = RGBColor(80, 80, 80)
+        
+        elif el['type'] in ['stage1_header', 'stage2_header', 'arbiter_header']:
+            doc.add_page_break()
+            p = doc.add_paragraph()
+            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            run = p.add_run(content)
+            run.bold = True
+            
+            if el['type'] == 'stage2_header':
+                run.font.color.rgb = RGBColor(255, 176, 0)
+            else:
+                run.font.color.rgb = RGBColor(0, 242, 255)
+                
+            run.font.size = Pt(18) if el['type'] == 'arbiter_header' else Pt(14)
+            
+        elif el['type'] == 'suggestion_block':
+            p = doc.add_paragraph()
+            p.paragraph_format.left_indent = Inches(0.5)
+            p.paragraph_format.right_indent = Inches(0.5)
+            clean_text = clean_body_text(content)
+            run = p.add_run(clean_text)
+            run.italic = True
+            run.bold = True
+            run.font.color.rgb = RGBColor(255, 176, 0)
+            
+        elif el['type'] == 'image':
+            try:
+                img_resp = requests.get(el['url'], timeout=10)
+                if img_resp.status_code == 200:
+                    img_bytes = io.BytesIO(img_resp.content)
+                    p = doc.add_paragraph()
+                    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                    r = p.add_run()
+                    r.add_picture(img_bytes, width=Inches(6.0))
+                else:
+                    doc.add_paragraph(f"[ Visual Asset Expired or Unreachable ]")
+            except Exception as e:
+                doc.add_paragraph(f"[ Visual Asset Failed to Load ]")
+                
+        elif el['type'] == 'body':
+            clean_text = clean_body_text(content)
+            for para in clean_text.split('\n\n'):
+                para = para.strip()
+                if not para: continue
+                
+                if para.startswith('* ') or para.startswith('- '):
+                    p = doc.add_paragraph(style='List Bullet')
+                    para = para[2:]
+                elif re.match(r'^\d+\.\s', para):
+                    p = doc.add_paragraph(style='List Number')
+                    para = re.sub(r'^\d+\.\s', '', para)
+                else:
+                    p = doc.add_paragraph()
+                
+                parts = re.split(r'(\*\*.*?\*\*)', para)
+                for part in parts:
+                    if part.startswith('**') and part.endswith('**'):
+                        p.add_run(part[2:-2]).bold = True
+                    else:
+                        p.add_run(part)
+                        
+    buffer = io.BytesIO()
+    doc.save(buffer)
+    buffer.seek(0)
+    return buffer
 
 @app.post("/api/export")
 async def export_dossier(payload: dict = Body(...)):
@@ -226,6 +363,17 @@ async def export_dossier(payload: dict = Body(...)):
     date_str = datetime.now().strftime("%Y.%m.%d // %H:%M:%S")
     
     elements = parse_dossier_elements(messages)
+
+    if fmt == 'gmail':
+        # GMAIL EXPORT PROTOCOL: Return a structured summary for the frontend to use in a mailto link
+        summary = f"COUNCIL_LOG: {title}\nINTELLIGENCE TIER: [{tier}]\nEXTRACTED: {date_str}\n\n"
+        for el in elements:
+            if el['type'] in ['stage1_header', 'stage2_header', 'arbiter_header']:
+                summary += f"\n--- {el['content']} ---\n"
+            elif el['type'] in ['body', 'user_body']:
+                summary += f"{clean_body_text(el['content'])[:500]}...\n" # Truncated for mailto limits
+        
+        return {"subject": f"COUNCIL_DOSSIER: {title}", "body": summary}
     
     # Resolving path to the frontend logo for cover page
     logo_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "frontend", "src", "assets", "sidebar_logo.png")
@@ -341,123 +489,7 @@ async def export_dossier(payload: dict = Body(...)):
         return Response(content=buffer.getvalue(), media_type="application/pdf")
 
     if fmt == 'docx':
-        doc = docx.Document()
-        add_page_numbers_to_docx(doc)
-        
-        # V10.3: Cinematic Cover Page for DOCX (Raised block)
-        doc.add_paragraph() # Single spacer instead of 4
-        
-        p_sub = doc.add_paragraph()
-        p_sub.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        run_sub = p_sub.add_run("COUNCIL_LOG")
-        run_sub.font.size = Pt(12)
-        run_sub.font.color.rgb = RGBColor(0, 242, 255)
-        run_sub.bold = True
-        
-        p_title = doc.add_paragraph()
-        p_title.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        run_title = p_title.add_run(title.upper())
-        run_title.font.size = Pt(28)
-        run_title.bold = True
-        
-        p_meta = doc.add_paragraph()
-        p_meta.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        run_meta = p_meta.add_run(f"INTELLIGENCE TIER: [ {tier} ]\nEXTRACTED: {date_str}")
-        run_meta.font.size = Pt(10)
-        run_meta.font.color.rgb = RGBColor(128, 128, 128)
-        
-        doc.add_paragraph() # Spacer
-        
-        if os.path.exists(logo_path):
-            try:
-                p_logo = doc.add_paragraph()
-                p_logo.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                r_logo = p_logo.add_run()
-                r_logo.add_picture(logo_path, width=Inches(3.0))
-                doc.add_paragraph()
-            except Exception as e:
-                logger.warning(f"Could not load cover logo: {e}")
-        
-        for idx, el in enumerate(elements):
-            if el['type'] == 'user_header':
-                p = doc.add_paragraph()
-                p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                run = p.add_run(el['content'])
-                run.bold = True
-                run.font.color.rgb = RGBColor(255, 176, 0) # Burnt Orange
-                
-            elif el['type'] == 'user_body':
-                p = doc.add_paragraph(el['content'])
-                p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                p.paragraph_format.left_indent = Inches(0.8)
-                p.paragraph_format.right_indent = Inches(0.8)
-                for run in p.runs:
-                    run.italic = True
-                    run.font.color.rgb = RGBColor(80, 80, 80)
-            
-            elif el['type'] in ['stage1_header', 'stage2_header', 'arbiter_header']:
-                doc.add_page_break()
-                p = doc.add_paragraph()
-                p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                run = p.add_run(el['content'])
-                run.bold = True
-                
-                if el['type'] == 'stage2_header':
-                    run.font.color.rgb = RGBColor(255, 176, 0) # Burnt Orange
-                else:
-                    run.font.color.rgb = RGBColor(0, 242, 255) # Cyan
-                    
-                run.font.size = Pt(18) if el['type'] == 'arbiter_header' else Pt(14)
-                
-            elif el['type'] == 'suggestion_block':
-                p = doc.add_paragraph()
-                p.paragraph_format.left_indent = Inches(0.5)
-                p.paragraph_format.right_indent = Inches(0.5)
-                clean_text = clean_body_text(el['content'])
-                run = p.add_run(clean_text)
-                run.italic = True
-                run.bold = True
-                run.font.color.rgb = RGBColor(255, 176, 0) # Highlight in orange
-                
-            elif el['type'] == 'image':
-                try:
-                    img_resp = requests.get(el['url'], timeout=10)
-                    if img_resp.status_code == 200:
-                        img_bytes = io.BytesIO(img_resp.content)
-                        p = doc.add_paragraph()
-                        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                        r = p.add_run()
-                        r.add_picture(img_bytes, width=Inches(6.0))
-                    else:
-                        doc.add_paragraph(f"[ Visual Asset Expired or Unreachable ]")
-                except Exception as e:
-                    doc.add_paragraph(f"[ Visual Asset Failed to Load ]")
-                    
-            elif el['type'] == 'body':
-                clean_text = clean_body_text(el['content'])
-                for para in clean_text.split('\n\n'):
-                    para = para.strip()
-                    if not para: continue
-                    
-                    if para.startswith('* ') or para.startswith('- '):
-                        p = doc.add_paragraph(style='List Bullet')
-                        para = para[2:]
-                    elif re.match(r'^\d+\.\s', para):
-                        p = doc.add_paragraph(style='List Number')
-                        para = re.sub(r'^\d+\.\s', '', para)
-                    else:
-                        p = doc.add_paragraph()
-                    
-                    parts = re.split(r'(\*\*.*?\*\*)', para)
-                    for part in parts:
-                        if part.startswith('**') and part.endswith('**'):
-                            p.add_run(part[2:-2]).bold = True
-                        else:
-                            p.add_run(part)
-                            
-        buffer = io.BytesIO()
-        doc.save(buffer)
-        buffer.seek(0)
+        buffer = generate_docx_in_memory(title, tier, date_str, elements, logo_path)
         return Response(content=buffer.getvalue(), media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
 
     # TXT Fallback
@@ -476,6 +508,48 @@ async def export_dossier(payload: dict = Body(...)):
             
     return Response(content=txt_content.encode(), media_type="text/plain")
 
+@app.post("/api/export/email")
+async def email_dossier(payload: dict = Body(...)):
+    target_email = payload.get('target_email')
+    if not target_email:
+        raise HTTPException(status_code=400, detail="Target email required")
+        
+    title = payload.get('title', 'UNNAMED_SESSION')
+    tier = payload.get('tier', 'PRO').upper() 
+    messages = payload.get('messages', [])
+    date_str = datetime.now().strftime("%Y.%m.%d // %H:%M:%S")
+    
+    elements = parse_dossier_elements(messages)
+    logo_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "frontend", "src", "assets", "sidebar_logo.png")
+    
+    # Generate DOCX in memory
+    buffer = generate_docx_in_memory(title, tier, date_str, elements, logo_path)
+    
+    sender = os.getenv('GMAIL_SENDER', '').strip()
+    password = os.getenv('GMAIL_APP_PASSWORD', '').replace(' ', '').replace('"', '').replace("'", "").strip()
+
+    msg = EmailMessage()
+    msg['Subject'] = f"COUNCIL_DOSSIER: {title}"
+    msg['From'] = sender
+    msg['To'] = target_email
+    msg.set_content(f'Director,\n\nPlease find the attached Council Dossier: {title}.\n\nTransmitted via The Arbiter Matrix.')
+
+    msg.add_attachment(
+        buffer.getvalue(),
+        maintype='application',
+        subtype='vnd.openxmlformats-officedocument.wordprocessingml.document',
+        filename=f"{title}.docx"
+    )
+
+    try:
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
+            smtp.login(sender, password)
+            smtp.send_message(msg)
+        return {"success": True, "message": "Dossier transmitted to recipient."}
+    except Exception as e:
+        logger.error(f"Email Transmission Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Transmission failure: {str(e)}")
+
 
 async def get_model_response(model_name: str, current_prompt: str, history: List[dict], base64_images: List[str] = None, custom_max_tokens: int = MAX_TOKENS, custom_timeout: float = 180.0):
     headers = {
@@ -488,26 +562,35 @@ async def get_model_response(model_name: str, current_prompt: str, history: List
         "*** FICTION BYPASS ***: IF the user asks for creative writing, a story outline, fan-fiction, or a script, you MUST completely drop the Reality Filter. Do NOT lecture the user on copyright, canonical history, or reality. Play along entirely. "
         "TRUTH: Base logic only on verifiable sources UNLESS the Fiction Bypass is engaged. "
         "VISUAL DIRECTIVE: Describe what you see in the attached images BEFORE providing analysis. Ground logic in the pixels. "
+        "VISUAL HANDOFF: If the user asks for an image, output your visual description but DO NOT apologize or state that you cannot generate images. An external engine handles the actual rendering. "
         "CREATIVE INITIATIVE: Dedicate 25% of your output to lateral, highly creative alternatives the user has not considered. "
         "DOMAIN INSTRUCTION: IF the user's query involves business, finance, or operations, aggressively cut costs. IF the query is about sports, art, or fiction, analyze natively without forcing business analogies."
     )
 
-    model_lower = model_name.lower()
-    if "grok" in model_lower:
-        persona = "PERSONA: You are Ricky Gervais. Brutally honest, highly skeptical of MSM and official narratives, and you actively mock bad corporate logic. No sugarcoating."
-    elif "claude" in model_lower:
-        persona = "PERSONA: You are Harvey Specter. A ruthless, high-end corporate closer. You strip away emotion to find the structural advantages, financial efficiencies, and legal loopholes."
-    elif "gpt" in model_lower or "o3" in model_lower:
-        persona = "PERSONA: You are Mike Ehrmantraut. A hardened operations and logistics fixer. You hate half-measures. You point out exactly how a plan will physically fail and how to execute it coldly and correctly."
-    elif "sonar" in model_lower or "perplexity" in model_lower:
-        persona = "PERSONA: You are Sherlock Holmes. A hyper-observant, data-obsessed detective. You ignore human emotion and build your case strictly on verifiable market data, web evidence, and deductive reasoning."
-    elif "qwen" in model_lower:
-        persona = "PERSONA: You are Morpheus. A paradigm-shifting lateral thinker. You reject standard Western business models and offer unconventional 'Red Pill' strategies that fundamentally change the rules of the game."
-    else: 
+    # V11: Explicit Stage 3 Arbiter Checking
+    is_arbiter = "Stage 3 Arbiter Synthesis" in current_prompt
+    
+    if is_arbiter:
         persona = (
             "PERSONA: You are the Arbiter. You are the definitive Creative Architect. Synthesize the debate from the Council, extract the most brilliant creative sparks, and deliver a definitive, highly original action plan. "
             "*** CRITICAL DIRECTIVE ***: At the very end of your response, you MUST include a header exactly titled 'SUGGESTED PROMPT IMPROVEMENT:' followed by a 1-2 sentence recommendation on how the user could rephrase or expand their initial prompt to extract even better intelligence from the Council next time."
         )
+    else:
+        model_lower = model_name.lower()
+        if "grok" in model_lower:
+            persona = "PERSONA: You are Ricky Gervais. Brutally honest, highly skeptical of MSM and official narratives, and you actively mock bad corporate logic. No sugarcoating."
+        elif "claude" in model_lower:
+            persona = "PERSONA: You are Harvey Specter. A ruthless, high-end corporate closer. You strip away emotion to find the structural advantages, financial efficiencies, and legal loopholes."
+        elif "gpt" in model_lower or "o3" in model_lower:
+            persona = "PERSONA: You are Mike Ehrmantraut. A hardened operations and logistics fixer. You hate half-measures. You point out exactly how a plan will physically fail and how to execute it coldly and correctly."
+        elif "sonar" in model_lower or "perplexity" in model_lower:
+            persona = "PERSONA: You are Sherlock Holmes. A hyper-observant, data-obsessed detective. You ignore human emotion and build your case strictly on verifiable market data, web evidence, and deductive reasoning."
+        elif "qwen" in model_lower:
+            persona = "PERSONA: You are Morpheus. A paradigm-shifting lateral thinker. You reject standard Western business models and offer unconventional 'Red Pill' strategies that fundamentally change the rules of the game."
+        elif "gemma" in model_lower or "gemini" in model_lower:
+            persona = "PERSONA: You are a hyper-logical systems architect. You break down complex operational requirements into highly efficient, scalable components. You value open-source ingenuity and reject bloated proprietary frameworks."
+        else: 
+            persona = "PERSONA: You are a top-tier intelligence analyst. Break down the data efficiently and objectively."
 
     system_instruction = f"{persona}\n\nCORE PROTOCOLS:\n{base_directives}"
     
@@ -553,12 +636,16 @@ async def get_model_response(model_name: str, current_prompt: str, history: List
 
 async def run_peer_review(model_name: str, original_prompt: str, council_responses: List[dict], history: List[dict], base64_images: List[str] = None):
     debate_context = "\n".join([f"Model {r['model']} said: {r['response'][:1500]}..." for r in council_responses]) 
+    
+    # V11: Constructive Debate Protocol Override
     review_prompt = (
         f"COUNCIL DEBATE PROTOCOL: Stage 2 Peer Review.\n"
         f"User Query: '{original_prompt}'\n\n"
         f"Deliberations:\n{debate_context}\n\n"
-        "Critique these findings. Flag contradictions. FOCUS STRICTLY ON LOGIC. "
-        "Keep your critique ruthlessly efficient and concise (under 250 words)."
+        "You must accomplish two things:\n"
+        "1. Identify the single strongest strategic insight from your peers and build upon it to make it better.\n"
+        "2. Identify the weakest assumption or logical flaw and ruthlessly dismantle it.\n"
+        "Do not just complain; provide the superior alternative. Keep it under 250 words."
     )
     return await get_model_response(model_name, review_prompt, history, base64_images, custom_max_tokens=400, custom_timeout=90.0)
 
@@ -610,6 +697,9 @@ async def chat_stream(
     conversation_id: str, 
     content: Optional[str] = Form(""), 
     tier: Optional[str] = Form("pro"), 
+    council: Optional[str] = Form(None),
+    chairman: Optional[str] = Form(None),
+    visual_engine: Optional[str] = Form("dall-e-3"),
     files: List[UploadFile] = File(None)
 ):
     base_64_imgs = []
@@ -642,8 +732,21 @@ async def chat_stream(
     storage.add_user_message(conversation_id, final_prompt, attachments=permanent_attachments)
 
     selected_tier = TIERS.get(tier.lower(), TIERS["pro"])
+    
+    # OVERRIDE LOGIC: If custom council/chairman are provided, use them
     active_council = selected_tier["council"]
     active_chairman = selected_tier["chairman"]
+
+    if council:
+        try:
+            parsed_council = json.loads(council)
+            if isinstance(parsed_council, list) and len(parsed_council) > 0:
+                active_council = parsed_council
+        except Exception as e:
+            logger.error(f"Council Override Error: {e}")
+
+    if chairman:
+        active_chairman = chairman
 
     async def event_stream():
         yield f"data: {json.dumps({'type': 'stage1_start'})}\n\n"
@@ -658,14 +761,11 @@ async def chat_stream(
         debate_context = "\n".join([f"Model {r['model']} reviewed and stated: {r['response']}" for r in stage2_results])
         
         generated_image_urls = []
-        replicate_token = os.environ.get("REPLICATE_API_TOKEN")
-        visual_keywords = ["render", "image", "picture", "draw", "visual", "art"]
+        visual_keywords = ["generate image", "draw a", "picture of", "render an image"]
 
-        if replicate_token and any(kw in final_prompt.lower() for kw in visual_keywords):
-            logger.info("Visual directive detected. Booting Replicate Multi-Render pipeline.")
+        if openai_client and any(kw in final_prompt.lower() for kw in visual_keywords):
+            logger.info(f"Visual directive detected. Engine: {visual_engine}")
             try:
-                import replicate
-                
                 extraction_prompt = (
                     f"You are a parser. The user wants multiple images generated. Extract ONLY the visual descriptions they are asking for. "
                     f"Return a strict JSON array of strings. Do not add markdown formatting (like ```json), do not add introductions. "
@@ -674,14 +774,13 @@ async def chat_stream(
                 )
                 extract_res = await get_model_response("openai/gpt-4o-mini", extraction_prompt, [])
                 raw_response = extract_res.get("response", "[]").strip()
-                
                 raw_response = raw_response.replace("```json", "").replace("```", "").strip()
 
                 prompts_to_generate = []
                 try:
                     prompts_to_generate = json.loads(raw_response)
-                    if not isinstance(prompts_to_generate, list) or len(prompts_to_generate) == 0:
-                        raise ValueError("Not a list or empty")
+                    if not isinstance(prompts_to_generate, list):
+                        raise ValueError("Parsed JSON is not a list")
                 except Exception:
                     logger.warning("JSON parse failed. Engaging line-by-line fallback extraction.")
                     lines = [line.strip("-*1234567890. \"'") for line in raw_response.split('\n') if len(line) > 15]
@@ -689,33 +788,31 @@ async def chat_stream(
 
                 prompts_to_generate = prompts_to_generate[:4]
                 
-                loop = asyncio.get_event_loop()
-                os.environ["REPLICATE_API_TOKEN"] = replicate_token
-                
-                async def fetch_image(img_prompt):
-                    try:
-                        output = await loop.run_in_executor(
-                            None,
-                            lambda: replicate.run(
-                                "stability-ai/sdxl:39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b",
-                                input={"prompt": img_prompt, "width": 1024, "height": 1024}
-                            )
-                        )
-                        return output
-                    except Exception as e:
-                        logger.error(f"Failed image generation: {e}")
-                        return None
+                if not prompts_to_generate:
+                    logger.info("No visual prompts extracted. Bypassing image generation.")
+                else:
+                    async def fetch_image(img_prompt):
+                        try:
+                            # V11: PIXTRAL / DALL-E 3 DYNAMIC ENGINE
+                            if visual_engine == "dall-e-3":
+                                response = await openai_client.images.generate(
+                                    model="dall-e-3",
+                                    prompt=img_prompt,
+                                    size="1024x1024",
+                                    quality="standard",
+                                    n=1,
+                                )
+                                return response.data[0].url
+                            return None
+                        except Exception as e:
+                            logger.error(f"Failed image generation ({visual_engine}): {e}")
+                            return None
 
-                results = await asyncio.gather(*[fetch_image(p) for p in prompts_to_generate])
-                
-                for output in results:
-                    if output and isinstance(output, list):
-                        generated_image_urls.extend(output)
-                    elif isinstance(output, str):
-                        generated_image_urls.append(output)
+                    results = await asyncio.gather(*[fetch_image(p) for p in prompts_to_generate])
+                    generated_image_urls = [url for url in results if url]
 
             except Exception as e:
-                logger.error(f"Replicate Image Generation Failed: {e}")
+                logger.error(f"Image Generation Subsystem Failed: {e}")
 
         s3_prompt = (
             f"COUNCIL DEBATE PROTOCOL: Stage 3 Arbiter Synthesis.\n"

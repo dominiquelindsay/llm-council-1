@@ -41,10 +41,25 @@ export const api = {
     if (!res.ok) throw new Error("DELETE_FAILED");
   },
 
-  async sendMessageStream(conversationId, content, files, tier, onEvent) {
+  async sendMessageStream(conversationId, content, files, tier, onEvent, council = null, chairman = null, visualEngine = 'dall-e-3') {
     const formData = new FormData();
     formData.append('content', content);
     formData.append('tier', tier);
+    formData.append('visual_engine', visualEngine);
+    const quarantined = JSON.parse(localStorage.getItem('quarantineList') || '[]');
+
+    if (council) {
+      const filteredCouncil = council.filter(slug => !quarantined.includes(slug));
+      formData.append('council', JSON.stringify(filteredCouncil));
+    }
+    
+    if (chairman) {
+      let finalChairman = chairman;
+      if (quarantined.includes(chairman)) {
+        finalChairman = 'google/gemini-3.1-pro-preview';
+      }
+      formData.append('chairman', finalChairman);
+    }
     if (files) {
       files.forEach(f => formData.append('files', f));
     }
