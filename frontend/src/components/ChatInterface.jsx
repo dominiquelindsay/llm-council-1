@@ -102,19 +102,30 @@ const CinematicStage = ({ title, data, color }) => {
   if (models.length === 0) return null;
 
   const rawText = parsedData[activeModel] || "";
+
+  // V11.0: Extract Suggestion Block
+  const suggestionRegex = /SUGGESTED PROMPT IMPROVEMENT:\s*([\s\S]*)/i;
+  const suggestionMatch = rawText.match(suggestionRegex);
+  let mainContent = rawText;
+  let suggestionContent = null;
+
+  if (suggestionMatch) {
+      suggestionContent = suggestionMatch[1].trim();
+      mainContent = rawText.substring(0, suggestionMatch.index).trim();
+  }
   
-  // V10.0: Multi-Media Parser (Handles Images & YouTube)
   const formatTextWithThumbnails = (text) => {
     if (typeof text !== 'string') return text;
     
     let formattedText = text.replace(/\\n/g, '\n').replace(/\\"/g, '"');
     
-    // Helper to extract <img> tags and format HTML backend artifacts
     const processImages = (str) => {
       let cleanStr = str
         .replace(/<hr\/>/g, '\n───────────────────────────────────────────\n')
         .replace(/<br\/>/g, '\n')
-        .replace(/<h3>(.*?)<\/h3>/g, '\n[ $1 ]\n');
+        .replace(/<h3>(.*?)<\/h3>/g, '\n[ $1 ]\n')
+        // Normalizes erratic AI markdown headers to strict UI brackets
+        .replace(/^#{1,4}\s+(.*)$/gm, '\n[ $1 ]\n');
 
       const imgParts = cleanStr.split(/(<img src='[^']+'[^>]*\/>)/g);
       
@@ -141,7 +152,6 @@ const CinematicStage = ({ title, data, color }) => {
       });
     };
 
-    // Regex to intercept YouTube links
     const ytRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/g;
     const parts = formattedText.split(ytRegex);
     
@@ -169,8 +179,6 @@ const CinematicStage = ({ title, data, color }) => {
       return <span key={index}>{processImages(part)}</span>;
     });
   };
-
-  const formattedOutput = formatTextWithThumbnails(rawText);
 
   return (
     <div style={{ marginBottom: '20px', border: `1px solid ${color}44`, background: '#050508', borderRadius: '4px', overflow: 'hidden' }}>
@@ -204,7 +212,23 @@ const CinematicStage = ({ title, data, color }) => {
         </div>
       )}
       <div style={{ padding: '25px', color: '#e0e0e0', fontSize: '14px', lineHeight: '1.7', whiteSpace: 'pre-wrap' }}>
-        {formattedOutput}
+        {formatTextWithThumbnails(mainContent)}
+        
+        {suggestionContent && (
+          <div style={{ 
+            background: 'rgba(255, 176, 0, 0.05)', 
+            borderLeft: '3px solid #ffb000', 
+            padding: '15px 20px', 
+            marginTop: '25px', 
+            fontFamily: 'monospace', 
+            fontSize: '13px', 
+            color: '#ffb000',
+            boxShadow: '0 0 15px rgba(255, 176, 0, 0.1)'
+          }}>
+            <div style={{ fontWeight: '900', letterSpacing: '2px', marginBottom: '8px' }}>[ SUGGESTED PROMPT IMPROVEMENT ]</div>
+            <div style={{ opacity: 0.9 }}>{suggestionContent}</div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -309,6 +333,10 @@ const ChatInterface = ({ conversation, onSendMessage, onClearHistory, isLoading 
             50% { opacity: 1; text-shadow: 0 0 35px rgba(0,255,65,0.9), 0 0 60px rgba(0,255,65,0.4); letter-spacing: 16px; }
             100% { opacity: 0.7; text-shadow: 0 0 15px rgba(0,255,65,0.4); letter-spacing: 14px; }
           }
+          @keyframes slideUp {
+            from { transform: translateY(40px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+          }
           .cinematic-pulse {
             animation: coreBreathing 4s infinite ease-in-out;
             transition: all 0.5s ease;
@@ -322,7 +350,7 @@ const ChatInterface = ({ conversation, onSendMessage, onClearHistory, isLoading 
       </style>
 
       <div className="chat-header-bar" style={{ background: '#0e1217', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 30px', borderBottom: '1px solid #1c1c22', zIndex: 100 }}>
-        <div style={{ color: '#00f2ff', letterSpacing: '3px', fontSize: '11px', fontWeight: 'bold' }}>COMMAND_MODULE // V10.0 ARBITER</div>
+        <div style={{ color: '#00f2ff', letterSpacing: '3px', fontSize: '11px', fontWeight: 'bold' }}>COMMAND_MODULE // V11.0 ARBITER</div>
         <div style={{ display: 'flex', gap: '12px', position: 'relative' }}>
           <HudButton label={showRadar ? "CLOSE_RADAR" : "SYSTEM_RADAR"} onClick={() => setShowRadar(!showRadar)} color={showRadar ? "#ff3e3e" : "#00f2ff"} />
           
@@ -355,11 +383,77 @@ const ChatInterface = ({ conversation, onSendMessage, onClearHistory, isLoading 
       <div style={{ flex: 1, position: 'relative', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
         {showRadar && <Radar />}
         {isSplash ? <Splash /> : isUplinkEstablished ? (
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-            <div className="cinematic-pulse" style={{ color: '#00ff41', fontSize: '38px', fontWeight: 'bold', fontFamily: 'monospace' }}>
-              SECURE_UPLINK_ESTABLISHED
-            </div>
-            <div style={{ color: '#00ff41', fontSize: '12px', letterSpacing: '4px', opacity: 0.6, marginTop: '15px', fontFamily: 'monospace' }}>SYSTEM_IDLE // AWAITING_NEURAL_TRANSMISSION</div>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+            <form 
+              className="briefing-injector" 
+              onSubmit={handleSubmit} 
+              style={{ 
+                animation: 'slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards', 
+                border: '1px solid rgba(0, 242, 255, 0.4)', 
+                background: 'rgba(5, 5, 8, 0.8)', 
+                boxShadow: '0 0 30px rgba(0, 242, 255, 0.1)', 
+                borderRadius: '4px', 
+                padding: '40px', 
+                width: '100%', 
+                maxWidth: '900px', 
+                display: 'flex', 
+                flexDirection: 'column', 
+                gap: '20px',
+                zIndex: 10
+              }}
+            >
+              <div style={{ color: '#00f2ff', fontSize: '18px', fontWeight: 'bold', letterSpacing: '6px', textAlign: 'center', marginBottom: '10px' }}>
+                SECURE_UPLINK_ESTABLISHED
+              </div>
+              
+              {stagedFiles.length > 0 && (
+                <div style={{ display: 'flex', gap: '15px', padding: '15px', background: '#0a0a0f', border: '1px solid #1c1c22', borderRadius: '4px' }}>
+                  {stagedFiles.map((file, idx) => {
+                    const isImage = file.type.startsWith('image/');
+                    return (
+                      <div key={idx} style={{ position: 'relative', width: '60px', height: '60px', background: '#111', borderRadius: '4px', border: '1px solid #00f2ff44', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {isImage ? (
+                          <img src={URL.createObjectURL(file)} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '4px' }} />
+                        ) : (
+                          <div style={{ color: '#00f2ff', fontSize: '10px', textAlign: 'center', wordBreak: 'break-all', padding: '5px' }}>{file.name.substring(0, 8)}...</div>
+                        )}
+                        <button type="button" onClick={() => removeStagedFile(idx)} style={{ position: 'absolute', top: '-8px', right: '-8px', background: '#ff3e3e', color: '#fff', border: 'none', borderRadius: '50%', width: '18px', height: '18px', fontSize: '10px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>X</button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              <textarea 
+                value={inputValue} 
+                onChange={(e) => setInputValue(e.target.value)} 
+                placeholder="Enter initial briefing protocol..."
+                rows={5}
+                style={{ 
+                  background: '#000', 
+                  color: '#fff', 
+                  border: '1px solid #1c1c22', 
+                  padding: '20px', 
+                  fontFamily: 'monospace', 
+                  fontSize: '16px', 
+                  resize: 'vertical', 
+                  outline: 'none', 
+                  borderRadius: '4px' 
+                }} 
+              />
+              
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  {['fast', 'pro', 'omega', 'god'].map(tier => (
+                    <HudButton key={tier} label={`TIER-${tier.toUpperCase()}`} isActive={intelligenceTier === tier} onClick={() => setIntelligenceTier(tier)} />
+                  ))}
+                </div>
+                <div style={{ display: 'flex', gap: '15px' }}>
+                  <button type="button" onClick={() => fileInputRef.current.click()} style={{ background: 'transparent', color: '#00f2ff', border: '1px solid #00f2ff44', padding: '15px 25px', fontSize: '12px', fontWeight: 'bold', letterSpacing: '2px', cursor: 'pointer', transition: 'all 0.2s' }}>[ ATTACH_DATA ]</button>
+                  <button type="submit" style={{ background: '#00f2ff', color: '#000', border: 'none', padding: '15px 30px', fontSize: '14px', fontWeight: '900', letterSpacing: '3px', cursor: 'pointer', boxShadow: '0 0 20px rgba(0,242,255,0.4)', transition: 'all 0.2s' }}>[ INITIATE_UPLINK ]</button>
+                </div>
+              </div>
+            </form>
           </div>
         ) : (
           <div className="messages-area" ref={scrollRef} style={{ flex: 1, padding: '50px', overflowY: 'auto' }}>
@@ -398,18 +492,19 @@ const ChatInterface = ({ conversation, onSendMessage, onClearHistory, isLoading 
         )}
       </div>
 
-      <div 
-        className="console-wrapper console-drop-zone" 
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-        style={{ padding: '30px 40px 40px', background: '#050508', zIndex: 50 }}
-      >
-        <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
-          {['fast', 'pro', 'omega', 'god'].map(tier => (
-            <HudButton key={tier} label={`TIER-${tier.toUpperCase()}`} isActive={intelligenceTier === tier} onClick={() => setIntelligenceTier(tier)} />
-          ))}
-        </div>
+      {!isSplash && !isUplinkEstablished && (
+        <div 
+          className="console-wrapper console-drop-zone" 
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          style={{ padding: '30px 40px 40px', background: '#050508', zIndex: 50 }}
+        >
+          <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+            {['fast', 'pro', 'omega', 'god'].map(tier => (
+              <HudButton key={tier} label={`TIER-${tier.toUpperCase()}`} isActive={intelligenceTier === tier} onClick={() => setIntelligenceTier(tier)} />
+            ))}
+          </div>
 
         {stagedFiles.length > 0 && (
           <div style={{ display: 'flex', gap: '15px', padding: '15px', background: '#0a0a0f', border: '1px solid #1c1c22', borderBottom: 'none', borderRadius: '4px 4px 0 0' }}>
@@ -515,6 +610,7 @@ const ChatInterface = ({ conversation, onSendMessage, onClearHistory, isLoading 
           </button>
         </form>
       </div>
+      )}
     </div>
   );
 };
