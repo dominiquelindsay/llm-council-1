@@ -217,9 +217,6 @@ const CinematicStage = ({ title, data, color }) => {
         </div>
       )}
       <div style={{ padding: '25px', color: '#e0e0e0', fontSize: '14px', lineHeight: '1.7', whiteSpace: 'pre-wrap' }}>
-<<<<<<< Updated upstream
-        {formattedOutput}
-=======
         {formatTextWithThumbnails(mainContent)}
         
         {suggestionContent && (
@@ -237,7 +234,6 @@ const CinematicStage = ({ title, data, color }) => {
             <div style={{ opacity: 0.9 }}>{suggestionContent}</div>
           </div>
         )}
->>>>>>> Stashed changes
       </div>
     </div>
   );
@@ -246,10 +242,7 @@ const CinematicStage = ({ title, data, color }) => {
 const ChatInterface = ({ conversation, onSendMessage, onClearHistory, isLoading }) => {
   const [inputValue, setInputValue] = useState('');
   const [intelligenceTier, setIntelligenceTier] = useState('pro');
-<<<<<<< Updated upstream
-=======
   const [visualEngine, setVisualEngine] = useState('dall-e-3'); // RESTORED STATE
->>>>>>> Stashed changes
   const [showRadar, setShowRadar] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [stagedFiles, setStagedFiles] = useState([]);
@@ -296,12 +289,8 @@ const ChatInterface = ({ conversation, onSendMessage, onClearHistory, isLoading 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!inputValue.trim() && stagedFiles.length === 0) return;
-<<<<<<< Updated upstream
-    if (onSendMessage) onSendMessage(inputValue, stagedFiles, intelligenceTier);
-=======
     // RESTORED: Passing visualEngine to API call
     if (onSendMessage) onSendMessage(inputValue, stagedFiles, intelligenceTier, visualEngine);
->>>>>>> Stashed changes
     setInputValue('');
     setStagedFiles([]);
   };
@@ -346,16 +335,6 @@ const ChatInterface = ({ conversation, onSendMessage, onClearHistory, isLoading 
       
       <style>
         {`
-<<<<<<< Updated upstream
-          @keyframes coreBreathing {
-            0% { opacity: 0.7; text-shadow: 0 0 15px rgba(0,255,65,0.4); letter-spacing: 14px; }
-            50% { opacity: 1; text-shadow: 0 0 35px rgba(0,255,65,0.9), 0 0 60px rgba(0,255,65,0.4); letter-spacing: 16px; }
-            100% { opacity: 0.7; text-shadow: 0 0 15px rgba(0,255,65,0.4); letter-spacing: 14px; }
-          }
-          .cinematic-pulse {
-            animation: coreBreathing 4s infinite ease-in-out;
-            transition: all 0.5s ease;
-=======
           @keyframes systemBoot {
             0% { transform: scale(0.98) translateY(10px); opacity: 0; filter: brightness(2) contrast(1.5); }
             5% { opacity: 1; filter: brightness(1.5) contrast(1.2); box-shadow: 0 0 50px rgba(0, 242, 255, 0.4); }
@@ -366,7 +345,6 @@ const ChatInterface = ({ conversation, onSendMessage, onClearHistory, isLoading 
           @keyframes scanlineSweep {
             0% { transform: translateY(-100%); }
             100% { transform: translateY(600px); }
->>>>>>> Stashed changes
           }
           .console-drop-zone {
             transition: all 0.3s ease;
