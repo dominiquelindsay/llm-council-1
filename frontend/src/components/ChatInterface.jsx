@@ -4,19 +4,22 @@ import Radar from './Radar';
 
 const HudButton = ({ label, onClick, color = '#00f2ff', isActive = false }) => (
   <button 
+    type="button"
     onClick={onClick} 
     style={{ 
       background: isActive ? `${color}22` : 'transparent', 
       color: isActive ? '#fff' : color, 
       border: `1px solid ${isActive ? color : color + '44'}`, 
-      padding: '5px 15px', 
-      fontSize: '10px', 
+      padding: '8px 20px', 
+      fontSize: '11px', 
       cursor: 'pointer', 
       fontWeight: 'bold', 
       textTransform: 'uppercase', 
-      letterSpacing: '1px',
-      boxShadow: isActive ? `0 0 10px ${color}44` : 'none',
-      transition: 'all 0.2s'
+      letterSpacing: '2px',
+      boxShadow: isActive ? `0 0 15px ${color}55, inset 0 0 10px ${color}22` : 'none',
+      transition: 'all 0.2s',
+      whiteSpace: 'nowrap',
+      borderRadius: '2px'
     }}
   >
     [ {label} ]
@@ -102,19 +105,32 @@ const CinematicStage = ({ title, data, color }) => {
   if (models.length === 0) return null;
 
   const rawText = parsedData[activeModel] || "";
+
+  // V12.0: Non-Greedy Suggestion Extraction
+  // Stops extracting if it hits the Visual Directive <hr/> line so images don't get trapped.
+  const suggestionRegex = /(?:\[\s*)?SUGGESTED PROMPT IMPROVEMENT(?:\]|:)\s*([\s\S]*?)(?=<hr\/>|<h3>|<\/br>|$)/i;
+  const suggestionMatch = rawText.match(suggestionRegex);
   
-  // V10.0: Multi-Media Parser (Handles Images & YouTube)
+  let mainContent = rawText;
+  let suggestionContent = null;
+
+  if (suggestionMatch) {
+      suggestionContent = suggestionMatch[1].trim();
+      // Remove the suggestion block from main content, leaving the image HTML intact
+      mainContent = rawText.replace(suggestionMatch[0], '').trim();
+  }
+  
   const formatTextWithThumbnails = (text) => {
     if (typeof text !== 'string') return text;
     
     let formattedText = text.replace(/\\n/g, '\n').replace(/\\"/g, '"');
     
-    // Helper to extract <img> tags and format HTML backend artifacts
     const processImages = (str) => {
       let cleanStr = str
         .replace(/<hr\/>/g, '\n───────────────────────────────────────────\n')
         .replace(/<br\/>/g, '\n')
-        .replace(/<h3>(.*?)<\/h3>/g, '\n[ $1 ]\n');
+        .replace(/<h3>(.*?)<\/h3>/g, '\n[ $1 ]\n')
+        .replace(/^#{1,4}\s+(.*)$/gm, '\n[ $1 ]\n');
 
       const imgParts = cleanStr.split(/(<img src='[^']+'[^>]*\/>)/g);
       
@@ -141,7 +157,6 @@ const CinematicStage = ({ title, data, color }) => {
       });
     };
 
-    // Regex to intercept YouTube links
     const ytRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/g;
     const parts = formattedText.split(ytRegex);
     
@@ -169,8 +184,6 @@ const CinematicStage = ({ title, data, color }) => {
       return <span key={index}>{processImages(part)}</span>;
     });
   };
-
-  const formattedOutput = formatTextWithThumbnails(rawText);
 
   return (
     <div style={{ marginBottom: '20px', border: `1px solid ${color}44`, background: '#050508', borderRadius: '4px', overflow: 'hidden' }}>
@@ -204,7 +217,27 @@ const CinematicStage = ({ title, data, color }) => {
         </div>
       )}
       <div style={{ padding: '25px', color: '#e0e0e0', fontSize: '14px', lineHeight: '1.7', whiteSpace: 'pre-wrap' }}>
+<<<<<<< Updated upstream
         {formattedOutput}
+=======
+        {formatTextWithThumbnails(mainContent)}
+        
+        {suggestionContent && (
+          <div style={{ 
+            background: 'rgba(255, 176, 0, 0.05)', 
+            borderLeft: '3px solid #ffb000', 
+            padding: '15px 20px', 
+            marginTop: '25px', 
+            fontFamily: 'monospace', 
+            fontSize: '13px', 
+            color: '#ffb000',
+            boxShadow: '0 0 15px rgba(255, 176, 0, 0.1)'
+          }}>
+            <div style={{ fontWeight: '900', letterSpacing: '2px', marginBottom: '8px' }}>[ SUGGESTED PROMPT IMPROVEMENT ]</div>
+            <div style={{ opacity: 0.9 }}>{suggestionContent}</div>
+          </div>
+        )}
+>>>>>>> Stashed changes
       </div>
     </div>
   );
@@ -213,6 +246,10 @@ const CinematicStage = ({ title, data, color }) => {
 const ChatInterface = ({ conversation, onSendMessage, onClearHistory, isLoading }) => {
   const [inputValue, setInputValue] = useState('');
   const [intelligenceTier, setIntelligenceTier] = useState('pro');
+<<<<<<< Updated upstream
+=======
+  const [visualEngine, setVisualEngine] = useState('dall-e-3'); // RESTORED STATE
+>>>>>>> Stashed changes
   const [showRadar, setShowRadar] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [stagedFiles, setStagedFiles] = useState([]);
@@ -259,7 +296,12 @@ const ChatInterface = ({ conversation, onSendMessage, onClearHistory, isLoading 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!inputValue.trim() && stagedFiles.length === 0) return;
+<<<<<<< Updated upstream
     if (onSendMessage) onSendMessage(inputValue, stagedFiles, intelligenceTier);
+=======
+    // RESTORED: Passing visualEngine to API call
+    if (onSendMessage) onSendMessage(inputValue, stagedFiles, intelligenceTier, visualEngine);
+>>>>>>> Stashed changes
     setInputValue('');
     setStagedFiles([]);
   };
@@ -304,6 +346,7 @@ const ChatInterface = ({ conversation, onSendMessage, onClearHistory, isLoading 
       
       <style>
         {`
+<<<<<<< Updated upstream
           @keyframes coreBreathing {
             0% { opacity: 0.7; text-shadow: 0 0 15px rgba(0,255,65,0.4); letter-spacing: 14px; }
             50% { opacity: 1; text-shadow: 0 0 35px rgba(0,255,65,0.9), 0 0 60px rgba(0,255,65,0.4); letter-spacing: 16px; }
@@ -312,17 +355,33 @@ const ChatInterface = ({ conversation, onSendMessage, onClearHistory, isLoading 
           .cinematic-pulse {
             animation: coreBreathing 4s infinite ease-in-out;
             transition: all 0.5s ease;
+=======
+          @keyframes systemBoot {
+            0% { transform: scale(0.98) translateY(10px); opacity: 0; filter: brightness(2) contrast(1.5); }
+            5% { opacity: 1; filter: brightness(1.5) contrast(1.2); box-shadow: 0 0 50px rgba(0, 242, 255, 0.4); }
+            10% { opacity: 0.4; }
+            15% { opacity: 1; transform: scale(1) translateY(0); filter: brightness(1) contrast(1); box-shadow: 0 0 30px rgba(0, 242, 255, 0.1); }
+            100% { transform: scale(1) translateY(0); opacity: 1; box-shadow: 0 0 30px rgba(0, 242, 255, 0.1); }
+          }
+          @keyframes scanlineSweep {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(600px); }
+>>>>>>> Stashed changes
           }
           .console-drop-zone {
             transition: all 0.3s ease;
             box-shadow: ${isDragging ? '0 0 30px rgba(0, 242, 255, 0.4) inset' : 'none'};
             border-top: ${isDragging ? '2px solid #00f2ff' : '1px solid #1c1c22'};
           }
+          .tech-input:focus {
+            box-shadow: inset 0 0 20px rgba(0, 242, 255, 0.05);
+            border-color: rgba(0, 242, 255, 0.4) !important;
+          }
         `}
       </style>
 
       <div className="chat-header-bar" style={{ background: '#0e1217', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 30px', borderBottom: '1px solid #1c1c22', zIndex: 100 }}>
-        <div style={{ color: '#00f2ff', letterSpacing: '3px', fontSize: '11px', fontWeight: 'bold' }}>COMMAND_MODULE // V10.0 ARBITER</div>
+        <div style={{ color: '#00f2ff', letterSpacing: '3px', fontSize: '11px', fontWeight: 'bold' }}>COMMAND_MODULE // V11.0 ARBITER</div>
         <div style={{ display: 'flex', gap: '12px', position: 'relative' }}>
           <HudButton label={showRadar ? "CLOSE_RADAR" : "SYSTEM_RADAR"} onClick={() => setShowRadar(!showRadar)} color={showRadar ? "#ff3e3e" : "#00f2ff"} />
           
@@ -346,6 +405,13 @@ const ChatInterface = ({ conversation, onSendMessage, onClearHistory, isLoading 
               </div>
             )}
           </div>
+          
+          {/* RESTORED: DALL-E 3 Engine Toggle */}
+          <HudButton 
+            label={visualEngine === 'dall-e-3' ? "ENGINE: DALL-E-3" : "ENGINE: OFF"} 
+            onClick={() => setVisualEngine(prev => prev === 'dall-e-3' ? 'none' : 'dall-e-3')} 
+            color="#b000ff" 
+          />
 
           <HudButton label="PRINT_DOSSIER" onClick={() => window.print()} />
           <HudButton label="PURGE_HISTORY" color="#ff3e3e" onClick={() => onClearHistory && onClearHistory(conversation?.id)} />
@@ -355,11 +421,158 @@ const ChatInterface = ({ conversation, onSendMessage, onClearHistory, isLoading 
       <div style={{ flex: 1, position: 'relative', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
         {showRadar && <Radar />}
         {isSplash ? <Splash /> : isUplinkEstablished ? (
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-            <div className="cinematic-pulse" style={{ color: '#00ff41', fontSize: '38px', fontWeight: 'bold', fontFamily: 'monospace' }}>
-              SECURE_UPLINK_ESTABLISHED
-            </div>
-            <div style={{ color: '#00ff41', fontSize: '12px', letterSpacing: '4px', opacity: 0.6, marginTop: '15px', fontFamily: 'monospace' }}>SYSTEM_IDLE // AWAITING_NEURAL_TRANSMISSION</div>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+            
+            <form 
+              className="briefing-injector" 
+              onSubmit={handleSubmit} 
+              style={{ 
+                animation: 'systemBoot 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards', 
+                border: '1px solid rgba(0, 242, 255, 0.15)', 
+                background: 'linear-gradient(135deg, rgba(5,5,8,0.95) 0%, rgba(10,14,20,0.95) 100%)',
+                backdropFilter: 'blur(10px)',
+                borderRadius: '8px', 
+                padding: '45px 50px', 
+                width: '100%', 
+                maxWidth: '900px', 
+                display: 'flex', 
+                flexDirection: 'column', 
+                gap: '15px',
+                zIndex: 10,
+                position: 'relative',
+                overflow: 'hidden'
+              }}
+            >
+              <div style={{ position: 'absolute', top: 0, left: 0, width: '30px', height: '30px', borderTop: '2px solid rgba(0, 242, 255, 0.6)', borderLeft: '2px solid rgba(0, 242, 255, 0.6)' }}></div>
+              <div style={{ position: 'absolute', top: 0, right: 0, width: '30px', height: '30px', borderTop: '2px solid rgba(0, 242, 255, 0.6)', borderRight: '2px solid rgba(0, 242, 255, 0.6)' }}></div>
+              <div style={{ position: 'absolute', bottom: 0, left: 0, width: '30px', height: '30px', borderBottom: '2px solid rgba(0, 242, 255, 0.6)', borderLeft: '2px solid rgba(0, 242, 255, 0.6)' }}></div>
+              <div style={{ position: 'absolute', bottom: 0, right: 0, width: '30px', height: '30px', borderBottom: '2px solid rgba(0, 242, 255, 0.6)', borderRight: '2px solid rgba(0, 242, 255, 0.6)' }}></div>
+
+              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '15px', background: 'linear-gradient(to bottom, transparent, rgba(0, 242, 255, 0.1), transparent)', animation: 'scanlineSweep 4s linear infinite', zIndex: 1, pointerEvents: 'none' }}></div>
+
+              <div style={{ position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                
+                <div>
+                  <div style={{ color: '#00f2ff', fontSize: '18px', fontWeight: 'bold', letterSpacing: '8px', textAlign: 'center', marginBottom: '15px', textShadow: '0 0 15px rgba(0, 242, 255, 0.4)' }}>
+                    SECURE_UPLINK_ESTABLISHED
+                  </div>
+                  
+                  <div style={{ display: 'flex', justifyContent: 'center', gap: '15px' }}>
+                    {['fast', 'pro', 'omega', 'god'].map(tier => (
+                      <HudButton key={tier} label={`TIER-${tier.toUpperCase()}`} isActive={intelligenceTier === tier} onClick={() => setIntelligenceTier(tier)} />
+                    ))}
+                  </div>
+                </div>
+                
+                {stagedFiles.length > 0 && (
+                  <div style={{ display: 'flex', gap: '15px', padding: '15px', background: 'rgba(10, 10, 15, 0.8)', border: '1px solid rgba(28, 28, 34, 0.8)', borderRadius: '4px' }}>
+                    {stagedFiles.map((file, idx) => {
+                      const isImage = file.type.startsWith('image/');
+                      return (
+                        <div key={idx} style={{ position: 'relative', width: '60px', height: '60px', background: '#111', borderRadius: '4px', border: '1px solid #00f2ff44', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          {isImage ? (
+                            <img src={URL.createObjectURL(file)} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '4px' }} />
+                          ) : (
+                            <div style={{ color: '#00f2ff', fontSize: '10px', textAlign: 'center', wordBreak: 'break-all', padding: '5px' }}>{file.name.substring(0, 8)}...</div>
+                          )}
+                          <button type="button" onClick={() => removeStagedFile(idx)} style={{ position: 'absolute', top: '-8px', right: '-8px', background: '#ff3e3e', color: '#fff', border: 'none', borderRadius: '50%', width: '18px', height: '18px', fontSize: '10px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>X</button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                <textarea 
+                  className="tech-input"
+                  value={inputValue} 
+                  onChange={(e) => setInputValue(e.target.value)} 
+                  placeholder="Enter initial briefing protocol..."
+                  rows={4}
+                  style={{ 
+                    width: '100%',
+                    background: 'rgba(2, 2, 4, 0.7)', 
+                    color: '#fff', 
+                    border: '1px solid rgba(28, 28, 34, 0.8)', 
+                    padding: '25px', 
+                    fontFamily: 'monospace', 
+                    fontSize: '16px', 
+                    resize: 'vertical', 
+                    outline: 'none', 
+                    borderRadius: '4px',
+                    transition: 'all 0.3s ease',
+                    boxSizing: 'border-box',
+                    boxShadow: 'inset 0 0 20px rgba(0,0,0,0.5)'
+                  }} 
+                />
+                
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '20px', marginTop: '5px' }}>
+                  <button 
+                    type="button" 
+                    onClick={() => fileInputRef.current.click()} 
+                    style={{ 
+                      background: 'rgba(0, 242, 255, 0.05)', 
+                      color: '#00f2ff', 
+                      border: '1px solid rgba(0, 242, 255, 0.3)', 
+                      padding: '0 30px', 
+                      height: '45px',
+                      fontSize: '12px', 
+                      fontWeight: 'bold', 
+                      letterSpacing: '2px', 
+                      cursor: 'pointer', 
+                      transition: 'all 0.2s',
+                      display: 'flex',
+                      alignItems: 'center',
+                      whiteSpace: 'nowrap',
+                      boxShadow: 'inset 0 0 10px rgba(0,242,255,0.05)',
+                      borderRadius: '2px'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.background = 'rgba(0, 242, 255, 0.1)';
+                      e.target.style.boxShadow = '0 0 15px rgba(0,242,255,0.2), inset 0 0 15px rgba(0,242,255,0.1)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.background = 'rgba(0, 242, 255, 0.05)';
+                      e.target.style.boxShadow = 'inset 0 0 10px rgba(0,242,255,0.05)';
+                    }}
+                  >
+                    [ ATTACH_DATA ]
+                  </button>
+                  
+                  <button 
+                    type="submit" 
+                    style={{ 
+                      background: 'linear-gradient(90deg, #ffb000, #ff8c00)', 
+                      color: '#050508', 
+                      border: '1px solid #ffe600', 
+                      padding: '0 40px', 
+                      height: '45px',
+                      fontSize: '13px', 
+                      fontWeight: '900', 
+                      letterSpacing: '3px', 
+                      cursor: 'pointer', 
+                      boxShadow: '0 0 20px rgba(255, 176, 0, 0.3)', 
+                      transition: 'all 0.2s',
+                      display: 'flex',
+                      alignItems: 'center',
+                      whiteSpace: 'nowrap',
+                      borderRadius: '2px'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.boxShadow = '0 0 35px rgba(255, 176, 0, 0.6)';
+                      e.target.style.transform = 'scale(1.02)';
+                      e.target.style.filter = 'brightness(1.1)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.boxShadow = '0 0 20px rgba(255, 176, 0, 0.3)';
+                      e.target.style.transform = 'scale(1)';
+                      e.target.style.filter = 'brightness(1)';
+                    }}
+                  >
+                    [ INITIATE_UPLINK ]
+                  </button>
+                </div>
+              </div>
+            </form>
           </div>
         ) : (
           <div className="messages-area" ref={scrollRef} style={{ flex: 1, padding: '50px', overflowY: 'auto' }}>
@@ -398,18 +611,19 @@ const ChatInterface = ({ conversation, onSendMessage, onClearHistory, isLoading 
         )}
       </div>
 
-      <div 
-        className="console-wrapper console-drop-zone" 
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-        style={{ padding: '30px 40px 40px', background: '#050508', zIndex: 50 }}
-      >
-        <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
-          {['fast', 'pro', 'omega', 'god'].map(tier => (
-            <HudButton key={tier} label={`TIER-${tier.toUpperCase()}`} isActive={intelligenceTier === tier} onClick={() => setIntelligenceTier(tier)} />
-          ))}
-        </div>
+      {!isSplash && !isUplinkEstablished && (
+        <div 
+          className="console-wrapper console-drop-zone" 
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          style={{ padding: '30px 40px 40px', background: '#050508', zIndex: 50 }}
+        >
+          <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+            {['fast', 'pro', 'omega', 'god'].map(tier => (
+              <HudButton key={tier} label={`TIER-${tier.toUpperCase()}`} isActive={intelligenceTier === tier} onClick={() => setIntelligenceTier(tier)} />
+            ))}
+          </div>
 
         {stagedFiles.length > 0 && (
           <div style={{ display: 'flex', gap: '15px', padding: '15px', background: '#0a0a0f', border: '1px solid #1c1c22', borderBottom: 'none', borderRadius: '4px 4px 0 0' }}>
@@ -515,6 +729,7 @@ const ChatInterface = ({ conversation, onSendMessage, onClearHistory, isLoading 
           </button>
         </form>
       </div>
+      )}
     </div>
   );
 };
