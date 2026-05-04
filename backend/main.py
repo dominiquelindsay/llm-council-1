@@ -43,6 +43,7 @@ from reportlab.pdfgen import canvas
 from PIL import Image
 
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Body
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, Response
 from typing import List, Optional
@@ -60,6 +61,22 @@ import storage
 
 app = FastAPI(title="LLM Council - Intelligence Collective")
 
+def download_and_cache_image(openai_url):
+    try:
+        filename = f"dalle_{uuid.uuid4().hex[:8]}.png"
+        save_dir = os.path.join(os.getcwd(), "static", "assets")
+        os.makedirs(save_dir, exist_ok=True)
+        filepath = os.path.join(save_dir, filename)
+        response = requests.get(openai_url, stream=True)
+        response.raise_for_status()
+        with open(filepath, 'wb') as f:
+            for chunk in response.iter_content(chunk_size=8192):
+                f.write(chunk)
+        return f"http://localhost:5000/static/assets/{filename}"
+    except Exception as e:
+        print(f"IMAGE_INTERCEPT_FAILED: {e}")
+        return openai_url
+
 # --- CORS SECURITY PROTOCOL ---
 app.add_middleware(
     CORSMiddleware,
@@ -68,6 +85,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("council_api")
@@ -802,7 +821,9 @@ async def chat_stream(
                                     quality="standard",
                                     n=1,
                                 )
-                                return response.data[0].url
+                                raw_url = response.data[0].url
+                                # LOCAL HOISTING PROTOCOL INTERCEPT
+                                return download_and_cache_image(raw_url)
                             return None
                         except Exception as e:
                             logger.error(f"Failed image generation ({visual_engine}): {e}")
