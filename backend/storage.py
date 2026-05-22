@@ -141,3 +141,10 @@ def clear_messages(conversation_id: str):
 
     conversation["messages"] = []
     save_conversation(conversation)
+
+
+def delete_conversation(conversation_id: str):
+    """Delete a conversation JSON file from storage."""
+    path = get_conversation_path(conversation_id)
+    if os.path.exists(path):
+        os.remove(path)

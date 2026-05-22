@@ -712,6 +712,11 @@ async def clear_conversation_history(conversation_id: str):
     storage.clear_messages(conversation_id)
     return {"success": True}
 
+@app.delete("/api/conversations/{conversation_id}")
+async def delete_conversation(conversation_id: str):
+    storage.delete_conversation(conversation_id)
+    return {"success": True}
+
 @app.post("/api/conversations/{conversation_id}/messages")
 async def chat_stream(
     conversation_id: str, 
