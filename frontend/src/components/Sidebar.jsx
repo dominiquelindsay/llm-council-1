@@ -16,6 +16,7 @@ const Sidebar = ({
   const [isLogoHovered, setIsLogoHovered] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [editValue, setEditValue] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const inputRef = useRef(null);
 
   useEffect(() => {
@@ -31,6 +32,14 @@ const Sidebar = ({
     }
     setEditingId(null);
   };
+
+  const filteredActive = conversations.filter(c => 
+    (c.title || 'NEW DELIBERATION').toLowerCase().includes(searchQuery.toLowerCase())
+  );
+  
+  const filteredTrashed = trashedConversations.filter(c => 
+    (c.title || 'NULL_LOG').toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <div className="sidebar" style={{ 
@@ -145,6 +154,57 @@ const Sidebar = ({
           <span style={{ fontSize: '18px' }}>&gt;</span> INITIATE_NEW_SESSION
           <div style={{ width: '10px', height: '10px', background: '#00f2ff', boxShadow: '0 0 10px #00f2ff' }} />
         </button>
+
+        {/* HUD SEARCH BOX */}
+        <div style={{ marginTop: '20px', position: 'relative' }}>
+          <input 
+            type="text"
+            placeholder="SEARCH_ARCHIVES..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{
+              width: '100%',
+              background: '#000',
+              border: '1px solid #1c1c22',
+              color: '#00f2ff',
+              padding: '12px 15px',
+              fontSize: '11px',
+              fontFamily: 'monospace',
+              letterSpacing: '2px',
+              outline: 'none',
+              borderRadius: '2px',
+              transition: 'all 0.3s ease',
+              boxSizing: 'border-box'
+            }}
+            onFocus={(e) => {
+              e.target.style.borderColor = '#00f2ff';
+              e.target.style.boxShadow = '0 0 10px rgba(0, 242, 255, 0.25)';
+            }}
+            onBlur={(e) => {
+              e.target.style.borderColor = '#1c1c22';
+              e.target.style.boxShadow = 'none';
+            }}
+          />
+          {searchQuery && (
+            <span 
+              onClick={() => setSearchQuery('')}
+              style={{
+                position: 'absolute',
+                right: '15px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                color: '#ff3e3e',
+                cursor: 'pointer',
+                fontSize: '11px',
+                fontFamily: 'monospace',
+                fontWeight: 'bold',
+                userSelect: 'none'
+              }}
+            >
+              [X]
+            </span>
+          )}
+        </div>
       </div>
 
       {/* SCROLLABLE CONTENT AREA */}
@@ -154,7 +214,7 @@ const Sidebar = ({
           /// ACTIVE_ARCHIVES_INDEX
         </div>
         
-        {conversations.map(c => (
+        {filteredActive.map(c => (
           <div 
             key={c.id} 
             className={`archive-card ${currentConversationId === c.id ? 'active' : ''}`}
@@ -239,12 +299,12 @@ const Sidebar = ({
         ))}
 
         {/* QUARANTINE SECTOR */}
-        {trashedConversations.length > 0 && (
+        {filteredTrashed.length > 0 && (
           <div style={{ marginTop: '40px' }}>
             <div style={{ fontSize: '11px', color: '#ff3e3e', letterSpacing: '3px', fontWeight: 'bold', marginBottom: '15px', opacity: 0.85, textShadow: '0 0 5px rgba(255, 62, 62, 0.3)' }}>
               /// QUARANTINE_SECTOR
             </div>
-            {trashedConversations.map(c => (
+            {filteredTrashed.map(c => (
               <div key={c.id} className="trash-card">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ color: '#ff6b6b', fontFamily: 'monospace', fontWeight: 'bold', textShadow: '0 0 5px rgba(255, 107, 107, 0.25)' }}>
