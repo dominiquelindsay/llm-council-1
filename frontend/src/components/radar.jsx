@@ -1,25 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { useCouncil } from '../CouncilContext';
 
+const formatDate = (date) => {
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const dd = String(date.getDate()).padStart(2, '0');
+  const hh = String(date.getHours()).padStart(2, '0');
+  const min = String(date.getMinutes()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd} ${hh}:${min}`;
+};
+
 const Radar = () => {
-  const { councilConfig, toggleTierMember, updateTierChairman } = useCouncil();
+  const { councilConfig, globalRoster, toggleTierMember, updateTierChairman, toggleQuarantine, purgeTierData } = useCouncil();
   const [providers, setProviders] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const [toast, setToast] = useState(null);
   const [activeFilter, setActiveFilter] = useState('ALL');
-  
-  // V11: Quarantine Persistent State
-  const [quarantined, setQuarantined] = useState(() => {
-    const saved = localStorage.getItem('quarantineList');
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [lastSync, setLastSync] = useState(() => localStorage.getItem('radar_last_sync') || null);
+  const [purgeTarget, setPurgeTarget] = useState(null);
 
   const TIERS = ['fast', 'pro', 'omega', 'god'];
   const TARGET_PROVIDERS = ["openai", "google", "anthropic", "x-ai", "perplexity", "qwen", "nvidia", "openrouter"];
-
-  useEffect(() => {
-    localStorage.setItem('quarantineList', JSON.stringify(quarantined));
-  }, [quarantined]);
 
   useEffect(() => {
     const fetchModels = async () => {
@@ -48,6 +49,10 @@ const Radar = () => {
           }));
         });
         setProviders(grouped);
+        const now = new Date();
+        const formatted = formatDate(now);
+        localStorage.setItem('radar_last_sync', formatted);
+        setLastSync(formatted);
         setIsLoading(false);
       } catch (error) {
         console.error("RADAR_SYNC_ERROR:", error);
@@ -58,7 +63,8 @@ const Radar = () => {
   }, []);
 
   const handleToggle = (tier, modelId) => {
-    if (quarantined.includes(modelId)) {
+    const isQuarantined = globalRoster.some(item => item.modelId === modelId && item.isQuarantined);
+    if (isQuarantined) {
       setToast("Cannot activate quarantined node.");
       setTimeout(() => setToast(null), 3500);
       return;
@@ -70,18 +76,9 @@ const Radar = () => {
     }
   };
 
-  const toggleQuarantine = (slug) => {
-    setQuarantined(prev => {
-      if (prev.includes(slug)) {
-        return prev.filter(id => id !== slug);
-      } else {
-        return [...prev, slug];
-      }
-    });
-  };
-
   const setGlobalArbiter = (slug) => {
-    if (quarantined.includes(slug)) {
+    const isQuarantined = globalRoster.some(item => item.modelId === slug && item.isQuarantined);
+    if (isQuarantined) {
        setToast("Cannot assign Arbiter role to a quarantined node.");
        setTimeout(() => setToast(null), 3500);
        return;
@@ -223,16 +220,32 @@ const Radar = () => {
       backdrop-filter: blur(5px);
       animation: slideDown 0.3s ease-out forwards;
     }
+    .purge-btn {
+      color: #ff003c;
+      border: 1px solid #ff003c44;
+      background: transparent;
+      font-size: 0.7rem;
+      padding: 5px 10px;
+      cursor: pointer;
+      font-family: monospace;
+      transition: all 0.2s;
+      letter-spacing: 1px;
+    }
+    .purge-btn:hover {
+      background: rgba(255, 0, 60, 0.15);
+      border-color: #ff003c;
+      box-shadow: 0 0 10px rgba(255, 0, 60, 0.3);
+    }
   `;
 
   if (isLoading) return (
-    <div style={{ position: 'fixed', top: '60px', left: '340px', right: 0, bottom: 0, background: '#020204', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#00f2ff', fontFamily: 'monospace', letterSpacing: '5px' }}>
+    <div style={{ position: 'fixed', top: '60px', left: 'var(--sidebar-width, 340px)', right: 0, bottom: 0, background: '#020204', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#00f2ff', fontFamily: 'monospace', letterSpacing: '5px' }}>
       SYNCHRONIZING_QWEN_VL_DATABASE...
     </div>
   );
 
   return (
-    <div style={{ position: 'fixed', top: '60px', left: '340px', right: 0, bottom: 0, zIndex: 1000, overflowY: 'auto', backdropFilter: 'blur(10px)', animation: 'flashlight-pulse 8s infinite ease-in-out', paddingBottom: '100px' }}>
+    <div style={{ position: 'fixed', top: '60px', left: 'var(--sidebar-width, 340px)', right: 0, bottom: 0, zIndex: 1000, overflowY: 'auto', backdropFilter: 'blur(10px)', animation: 'flashlight-pulse 8s infinite ease-in-out', paddingBottom: '100px' }}>
       <style>{customStyles}</style>
 
       {toast && (
@@ -244,33 +257,47 @@ const Radar = () => {
       <div style={{ padding: '40px 60px 20px', textAlign: 'center' }}>
         <div style={{ color: '#00ff41', fontSize: '12px', letterSpacing: '8px', marginBottom: '10px', opacity: 0.6 }}>SYSTEM_STATUS: OMNISCIENT</div>
         <div style={{ color: '#fff', fontSize: '28px', fontWeight: '900', letterSpacing: '12px', textShadow: '0 0 20px rgba(255,255,255,0.2)' }}>COUNCIL_RADAR_V11.0</div>
+        {lastSync && (
+          <div className="last-sync-timestamp">
+            [ LAST_SYNC: {lastSync} ]
+          </div>
+        )}
         
-        {/* TIER FILTER HUD */}
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginTop: '30px' }}>
+        {/* TIER CONTROL PANEL (FILTER HUD + PURGE GRID) */}
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', flexWrap: 'wrap', marginTop: '30px' }}>
           {['ALL', 'FAST', 'PRO', 'OMEGA', 'GOD', 'ARBITER', 'QUARANTINE'].map(f => (
-            <button 
-              key={f}
-              onClick={() => setActiveFilter(f)}
-              style={{
-                background: activeFilter === f ? (f === 'QUARANTINE' ? 'rgba(255, 62, 62, 0.2)' : 'rgba(188, 19, 254, 0.2)') : 'transparent',
-                color: activeFilter === f ? '#fff' : (f === 'QUARANTINE' ? '#ff3e3e' : '#00f2ff'),
-                border: `1px solid ${activeFilter === f ? (f === 'QUARANTINE' ? '#ff3e3e' : '#bc13fe') : (f === 'QUARANTINE' ? '#ff3e3e44' : '#00f2ff44')}`,
-                padding: '8px 20px',
-                fontSize: '12px',
-                fontWeight: 'bold',
-                letterSpacing: '3px',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                boxShadow: activeFilter === f ? (f === 'QUARANTINE' ? '0 0 15px rgba(255, 62, 62, 0.4)' : '0 0 15px rgba(188, 19, 254, 0.4)') : 'none'
-              }}
-            >
-              [ {f} ]
-            </button>
+            <div key={f} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+              <button 
+                onClick={() => setActiveFilter(f)}
+                style={{
+                  background: activeFilter === f ? (f === 'QUARANTINE' ? 'rgba(255, 62, 62, 0.2)' : 'rgba(188, 19, 254, 0.2)') : 'transparent',
+                  color: activeFilter === f ? '#fff' : (f === 'QUARANTINE' ? '#ff3e3e' : '#00f2ff'),
+                  border: `1px solid ${activeFilter === f ? (f === 'QUARANTINE' ? '#ff3e3e' : '#bc13fe') : (f === 'QUARANTINE' ? '#ff3e3e44' : '#00f2ff44')}`,
+                  padding: '8px 20px',
+                  fontSize: '12px',
+                  fontWeight: 'bold',
+                  letterSpacing: '3px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  boxShadow: activeFilter === f ? (f === 'QUARANTINE' ? '0 0 15px rgba(255, 62, 62, 0.4)' : '0 0 15px rgba(188, 19, 254, 0.4)') : 'none',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                [ {f} ]
+              </button>
+              <button
+                className="purge-btn"
+                onClick={() => setPurgeTarget(f)}
+                style={{ whiteSpace: 'nowrap' }}
+              >
+                [ PURGE {f} ]
+              </button>
+            </div>
           ))}
         </div>
 
         {/* CAPACITY NODE MATRIX */}
-        <div style={{ marginTop: '25px', height: '40px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ marginTop: '20px', height: '40px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
           {(activeFilter === 'ALL' || activeFilter === 'ARBITER' || activeFilter === 'QUARANTINE') ? (
             <div style={{ color: '#00f2ff', fontSize: '12px', letterSpacing: '4px', opacity: 0.6, fontWeight: 'bold' }}>[ GLOBAL_VIEW ]</div>
           ) : (
@@ -278,7 +305,8 @@ const Radar = () => {
               <div style={{ color: '#bc13fe', fontSize: '10px', letterSpacing: '3px', fontWeight: 'bold' }}>[ SEAT_ALLOCATION ]</div>
               <div style={{ display: 'flex', gap: '12px' }}>
                 {[...Array(5)].map((_, i) => {
-                  const currentTierCount = councilConfig[activeFilter.toLowerCase()].council.length;
+                  const activeTier = activeFilter.toLowerCase();
+                  const currentTierCount = globalRoster.filter(item => item.tier === activeTier).length;
                   const isFilled = i < currentTierCount;
                   return (
                     <div key={i} style={{
@@ -319,10 +347,18 @@ const Radar = () => {
                 {provider}
               </div>
               {models.map(m => {
-                const isActiveInAnyTier = TIERS.some(t => councilConfig[t].council.includes(m.slug));
-                const isArbiterInAnyTier = TIERS.some(t => councilConfig[t].chairman === m.slug);
-                const isQuarantined = quarantined.includes(m.slug);
+                const rosterItem = globalRoster.find(item => item.modelId === m.slug);
+                const isActiveInAnyTier = !!(rosterItem && rosterItem.tier);
+                const isArbiterInAnyTier = !!(rosterItem && rosterItem.isArbiter);
+                const isQuarantined = !!(rosterItem && rosterItem.isQuarantined);
                 
+                const activeTier = activeFilter.toLowerCase();
+                const isAssignedToActiveTier = !!(rosterItem && rosterItem.tier === activeTier);
+                
+                const isCurrentlyActive = (activeFilter === 'ALL')
+                  ? isActiveInAnyTier
+                  : (activeFilter === 'ARBITER' ? isArbiterInAnyTier : (activeFilter === 'QUARANTINE' ? isQuarantined : isAssignedToActiveTier));
+
                 let cardOpacity = 0.3;
                 if (activeFilter === 'ALL') {
                   cardOpacity = 1;
@@ -331,11 +367,11 @@ const Radar = () => {
                 } else if (activeFilter === 'QUARANTINE') {
                   if (isQuarantined) cardOpacity = 1;
                 } else {
-                  if (councilConfig[activeFilter.toLowerCase()].council.includes(m.slug)) cardOpacity = 1;
+                  if (isAssignedToActiveTier) cardOpacity = 1;
                 }
 
                 return (
-                  <div key={m.slug} className={`radar-card ${provider === "QWEN_VL" ? "qwen-accent" : ""} ${isActiveInAnyTier ? 'active-in-tier' : ''} ${isQuarantined ? 'quarantined-card' : ''}`} style={{ opacity: cardOpacity }}>
+                  <div key={m.slug} className={`radar-card ${provider === "QWEN_VL" ? "qwen-accent" : ""} ${isCurrentlyActive ? 'active-in-tier' : ''} ${isQuarantined ? 'quarantined-card' : ''}`} style={{ opacity: cardOpacity }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                       <div style={{ color: '#fff', fontSize: '13px', fontWeight: 'bold' }}>{m.name}</div>
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
@@ -373,7 +409,7 @@ const Radar = () => {
 
                     <div className="tier-radio-group">
                       {TIERS.map(t => {
-                        const isActive = councilConfig[t].council.includes(m.slug);
+                        const isActive = globalRoster.some(item => item.modelId === m.slug && item.tier === t);
                         return (
                           <div 
                             key={t} 
@@ -393,6 +429,67 @@ const Radar = () => {
           ))}
         </div>
       </div>
+
+      {purgeTarget && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}>
+          <div style={{ border: '1px solid #ff003c', background: '#050505', padding: '40px', textAlign: 'center', boxShadow: '0 0 20px rgba(255,0,60,0.2)' }}>
+            <h3 style={{ color: '#ff003c', letterSpacing: '2px', marginBottom: '20px' }}>SYSTEM WARNING: PERMANENTLY PURGE {purgeTarget} DATA?</h3>
+            <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', marginTop: '20px' }}>
+              <button 
+                onClick={() => setPurgeTarget(null)}
+                style={{
+                  background: 'transparent',
+                  color: '#00f2ff',
+                  border: '1px solid #00f2ffaa',
+                  padding: '10px 20px',
+                  cursor: 'pointer',
+                  fontSize: '0.8rem',
+                  fontFamily: 'monospace',
+                  letterSpacing: '2px',
+                  fontWeight: 'bold',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.background = 'rgba(0, 242, 255, 0.15)';
+                  e.target.style.boxShadow = '0 0 10px rgba(0, 242, 255, 0.3)';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.background = 'transparent';
+                  e.target.style.boxShadow = 'none';
+                }}
+              >
+                [ ABORT ]
+              </button>
+              <button 
+                onClick={() => { purgeTierData(purgeTarget); setPurgeTarget(null); }}
+                style={{
+                  background: '#ff003c',
+                  color: '#fff',
+                  border: 'none',
+                  padding: '10px 20px',
+                  cursor: 'pointer',
+                  fontSize: '0.8rem',
+                  fontFamily: 'monospace',
+                  letterSpacing: '2px',
+                  fontWeight: 'bold',
+                  boxShadow: '0 0 12px rgba(255, 0, 60, 0.4)',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.boxShadow = '0 0 20px rgba(255, 0, 60, 0.7)';
+                  e.target.style.background = '#ff2a5b';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.boxShadow = '0 0 12px rgba(255, 0, 60, 0.4)';
+                  e.target.style.background = '#ff003c';
+                }}
+              >
+                [ CONFIRM_PURGE ]
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

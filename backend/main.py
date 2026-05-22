@@ -45,7 +45,7 @@ from PIL import Image
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Body
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse, Response
+from fastapi.responses import StreamingResponse, Response, FileResponse
 from typing import List, Optional
 from datetime import datetime
 
@@ -87,6 +87,7 @@ app.add_middleware(
 )
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/assets", StaticFiles(directory="frontend_build/assets"), name="frontend_assets")
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("council_api")
@@ -861,6 +862,14 @@ async def chat_stream(
         yield "data: [DONE]\n\n"
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
+
+@app.get("/{full_path:path}")
+async def serve_frontend(full_path: str):
+    frontend_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "frontend_build")
+    file_path = os.path.join(frontend_dir, full_path)
+    if os.path.exists(file_path) and os.path.isfile(file_path):
+        return FileResponse(file_path)
+    return FileResponse(os.path.join(frontend_dir, "index.html"))
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=5000)

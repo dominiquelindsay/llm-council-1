@@ -8,6 +8,44 @@ import './App.css';
 function App() {
   const { councilConfig } = useCouncil();
   const [conversations, setConversations] = useState([]);
+  
+  const [sidebarWidth, setSidebarWidth] = useState(() => {
+    const saved = localStorage.getItem('sidebar_width');
+    return saved ? parseInt(saved, 10) : 340;
+  });
+  const [isResizing, setIsResizing] = useState(false);
+
+  const startResizing = (e) => {
+    e.preventDefault();
+    setIsResizing(true);
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      if (!isResizing) return;
+      const newWidth = e.clientX;
+      if (newWidth >= 260 && newWidth <= 550) {
+        setSidebarWidth(newWidth);
+      }
+    };
+
+    const handleMouseUp = () => {
+      if (isResizing) {
+        setIsResizing(false);
+        localStorage.setItem('sidebar_width', sidebarWidth);
+      }
+    };
+
+    if (isResizing) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isResizing, sidebarWidth]);
   const [trashedIds, setTrashedIds] = useState(() => {
     const saved = localStorage.getItem('llm_quarantine');
     return saved ? JSON.parse(saved) : [];
@@ -264,7 +302,7 @@ function App() {
   const displayLoading = activeStream ? activeStream.isThinking : isFetching;
 
   return (
-    <div className="app">
+    <div className="app" style={{ '--sidebar-width': `${sidebarWidth}px` }}>
       <Sidebar
         conversations={conversations}
         trashedConversations={trashedConversations}
@@ -277,6 +315,31 @@ function App() {
         onPermanentDelete={handlePermanentDelete}
         onRenameConversation={handleRenameConversation}
       />
+      
+      {/* DRAGGABLE SCI-FI DIVIDER */}
+      <div 
+        onMouseDown={startResizing}
+        style={{
+          width: '6px',
+          cursor: 'col-resize',
+          background: 'transparent',
+          borderLeft: '1px solid #1c1c22',
+          zIndex: 150,
+          position: 'relative',
+          userSelect: 'none',
+          transition: 'all 0.2s',
+          alignSelf: 'stretch'
+        }}
+        onMouseEnter={(e) => {
+          e.target.style.background = '#00f2ff';
+          e.target.style.boxShadow = '0 0 10px #00f2ff, 0 0 20px #00f2ff';
+        }}
+        onMouseLeave={(e) => {
+          e.target.style.background = 'transparent';
+          e.target.style.boxShadow = 'none';
+        }}
+      />
+
       <ChatInterface
         conversation={displayConversation}
         onSendMessage={handleSendMessage}

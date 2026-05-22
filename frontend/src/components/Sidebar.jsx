@@ -34,9 +34,9 @@ const Sidebar = ({
 
   return (
     <div className="sidebar" style={{ 
-      width: '340px', 
+      width: 'var(--sidebar-width, 340px)', 
       background: '#020204', 
-      borderRight: '1px solid #1c1c22', 
+      borderRight: 'none', 
       height: '100vh', 
       display: 'flex', 
       flexDirection: 'column',
@@ -77,17 +77,21 @@ const Sidebar = ({
           background: #00f2ff08 !important;
         }
         .trash-card {
-          background: #0a0505;
-          border: 1px solid #311;
-          opacity: 0.6;
-          transition: all 0.2s;
+          background: #140707;
+          border: 1px solid #ff3e3e33;
+          opacity: 0.85;
+          transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
           margin-bottom: 8px;
           padding: 12px 15px;
           font-size: 11px;
+          box-shadow: 0 0 5px rgba(255, 62, 62, 0.05);
         }
         .trash-card:hover {
-          opacity: 1;
-          border-color: #ff3e3e44;
+          opacity: 1.0;
+          background: #1c0a0a;
+          border-color: #ff3e3e88;
+          box-shadow: 0 0 10px rgba(255, 62, 62, 0.2);
+          transform: translateX(2px);
         }
       `}</style>
 
@@ -237,14 +241,14 @@ const Sidebar = ({
         {/* QUARANTINE SECTOR */}
         {trashedConversations.length > 0 && (
           <div style={{ marginTop: '40px' }}>
-            <div style={{ fontSize: '9px', color: '#ff3e3e', letterSpacing: '3px', fontWeight: 'bold', marginBottom: '15px', opacity: 0.6 }}>
+            <div style={{ fontSize: '9px', color: '#ff3e3e', letterSpacing: '3px', fontWeight: 'bold', marginBottom: '15px', opacity: 0.85, textShadow: '0 0 5px rgba(255, 62, 62, 0.3)' }}>
               /// QUARANTINE_SECTOR
             </div>
             {trashedConversations.map(c => (
               <div key={c.id} className="trash-card">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ color: '#844', fontFamily: 'monospace' }}>
-                    <span style={{ opacity: 0.4 }}>VOID_</span> {c.title?.toUpperCase() || 'NULL_LOG'}
+                  <span style={{ color: '#ff6b6b', fontFamily: 'monospace', fontWeight: 'bold', textShadow: '0 0 5px rgba(255, 107, 107, 0.25)' }}>
+                    <span style={{ opacity: 0.6, color: '#ff3e3e' }}>VOID_</span> {c.title?.toUpperCase() || 'NULL_LOG'}
                   </span>
                   <div style={{ display: 'flex', gap: '10px', fontFamily: 'monospace', fontSize: '10px' }}>
                     <span 

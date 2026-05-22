@@ -1,5 +1,19 @@
+:root {
+  --primary-cyan: #00f2ff;
+}
+
 /* 1. Global Reset & Basic Layout */
 * { box-sizing: border-box; margin: 0; padding: 0; }
+
+.last-sync-timestamp {
+  font-weight: bold;
+  color: var(--primary-cyan);
+  font-size: 0.9rem;
+  font-family: monospace;
+  letter-spacing: 3px;
+  margin-top: 10px;
+  text-shadow: 0 0 10px rgba(0, 242, 255, 0.4);
+}
 
 .app {
   display: flex;
@@ -170,7 +184,7 @@
 .remove-file-btn:hover { color: #ff3e3e; text-shadow: 0 0 5px #ff3e3e; }
 
 /* 5. TACTICAL SIDEBAR */
-.sidebar { width: 320px; min-width: 320px; background: #000000; border-right: 1px solid #ffffff08; display: flex; flex-direction: column; height: 100vh; color: #666 !important; z-index: 10; }
+.sidebar { width: var(--sidebar-width, 340px) !important; min-width: var(--sidebar-width, 340px) !important; background: #000000; border-right: none; display: flex; flex-direction: column; height: 100vh; color: #666 !important; z-index: 10; }
 .sidebar-header { padding: 25px 20px; border-bottom: 1px solid #ffffff08; }
 .sidebar-title { font-size: 16px; font-weight: bold; letter-spacing: 2px; color: #00f2ff; text-align: center; margin-bottom: 25px; line-height: 1.6; text-shadow: 0 0 10px rgba(0, 242, 255, 0.4); }
 .classified-text { color: #ff3e3e; text-shadow: 0 0 10px rgba(255, 62, 62, 0.6); letter-spacing: 4px; }
