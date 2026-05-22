@@ -109,8 +109,18 @@ function App() {
     try {
       const convs = await api.listConversations();
       const currentTrashIds = JSON.parse(localStorage.getItem('llm_quarantine') || '[]');
-      setConversations(convs.filter(c => !currentTrashIds.includes(c.id)));
-      setTrashedConversations(convs.filter(c => currentTrashIds.includes(c.id)));
+      
+      // Synchronize and clean up localStorage/state from deleted/empty conversation references
+      const serverIds = convs.map(c => c.id);
+      const filteredTrashIds = currentTrashIds.filter(id => serverIds.includes(id));
+      
+      if (filteredTrashIds.length !== currentTrashIds.length) {
+        localStorage.setItem('llm_quarantine', JSON.stringify(filteredTrashIds));
+        setTrashedIds(filteredTrashIds);
+      }
+      
+      setConversations(convs.filter(c => !filteredTrashIds.includes(c.id)));
+      setTrashedConversations(convs.filter(c => filteredTrashIds.includes(c.id)));
     } catch (error) { console.error('Archive retrieval failed:', error); }
   };
 
