@@ -397,7 +397,7 @@ const ChatInterface = ({ conversation, onSendMessage, onClearHistory, isLoading 
           />
 
           <HudButton label="PRINT_DOSSIER" onClick={() => window.print()} />
-          <HudButton label="PURGE_HISTORY" color="#ff3e3e" onClick={() => onClearHistory && onClearHistory(conversation?.id)} />
+          <HudButton label="PURGE_RESPONSE" color="#ff3e3e" onClick={() => onClearHistory && onClearHistory(conversation?.id)} />
         </div>
       </div>
 

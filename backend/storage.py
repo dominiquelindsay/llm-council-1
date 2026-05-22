@@ -143,12 +143,15 @@ def update_conversation_title(conversation_id: str, title: str):
 
 
 def clear_messages(conversation_id: str):
-    """Clear all messages in a conversation while preserving the title."""
+    """Clear all messages in a conversation except the first message (user prompt) while preserving the title."""
     conversation = get_conversation(conversation_id)
     if conversation is None:
         raise ValueError(f"Conversation {conversation_id} not found")
 
-    conversation["messages"] = []
+    if conversation.get("messages"):
+        conversation["messages"] = conversation["messages"][:1]
+    else:
+        conversation["messages"] = []
     save_conversation(conversation)
 
 

@@ -200,7 +200,13 @@ function App() {
   const handleClearHistory = async (id) => {
     try { 
       await api.clearMessages(id); 
-      setCurrentConversation(prev => ({ ...prev, messages: [] })); 
+      setCurrentConversation(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          messages: prev.messages ? prev.messages.slice(0, 1) : []
+        };
+      }); 
       setActiveStreams(prev => {
           const next = { ...prev };
           delete next[id];
