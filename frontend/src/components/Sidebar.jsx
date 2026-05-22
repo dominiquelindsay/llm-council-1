@@ -83,7 +83,7 @@ const Sidebar = ({
           transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
           margin-bottom: 8px;
           padding: 12px 15px;
-          font-size: 11px;
+          font-size: 13px;
           box-shadow: 0 0 5px rgba(255, 62, 62, 0.05);
         }
         .trash-card:hover {
@@ -241,7 +241,7 @@ const Sidebar = ({
         {/* QUARANTINE SECTOR */}
         {trashedConversations.length > 0 && (
           <div style={{ marginTop: '40px' }}>
-            <div style={{ fontSize: '9px', color: '#ff3e3e', letterSpacing: '3px', fontWeight: 'bold', marginBottom: '15px', opacity: 0.85, textShadow: '0 0 5px rgba(255, 62, 62, 0.3)' }}>
+            <div style={{ fontSize: '11px', color: '#ff3e3e', letterSpacing: '3px', fontWeight: 'bold', marginBottom: '15px', opacity: 0.85, textShadow: '0 0 5px rgba(255, 62, 62, 0.3)' }}>
               /// QUARANTINE_SECTOR
             </div>
             {trashedConversations.map(c => (
@@ -250,7 +250,7 @@ const Sidebar = ({
                   <span style={{ color: '#ff6b6b', fontFamily: 'monospace', fontWeight: 'bold', textShadow: '0 0 5px rgba(255, 107, 107, 0.25)' }}>
                     <span style={{ opacity: 0.6, color: '#ff3e3e' }}>VOID_</span> {c.title?.toUpperCase() || 'NULL_LOG'}
                   </span>
-                  <div style={{ display: 'flex', gap: '10px', fontFamily: 'monospace', fontSize: '10px' }}>
+                  <div style={{ display: 'flex', gap: '10px', fontFamily: 'monospace', fontSize: '12px' }}>
                     <span 
                       onClick={() => onRestoreConversation(c.id)} 
                       style={{ color: '#00ff41', cursor: 'pointer' }}
