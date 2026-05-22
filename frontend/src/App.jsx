@@ -79,6 +79,11 @@ function App() {
 
   useEffect(() => {
     if (currentConversationId) {
+      if (currentConversationId === 'new') {
+        setCurrentConversation({ id: 'new', title: 'NEW DELIBERATION', messages: [] });
+        setIsFetching(false);
+        return;
+      }
       if (!activeStreams[currentConversationId]) {
         setCurrentConversation(null); 
         setIsFetching(true);
@@ -109,16 +114,9 @@ function App() {
     } catch (error) { console.error('Archive retrieval failed:', error); }
   };
 
-  const handleNewConversation = async () => {
-    try {
-      const newConv = await api.createConversation();
-      setConversations([{ id: newConv.id, title: "NEW DELIBERATION", created_at: new Date().toISOString() }, ...conversations]);
-      window.history.pushState({}, '', `?chat=${newConv.id}`);
-      setCurrentConversationId(newConv.id);
-    } catch (error) { 
-      console.error('Failed to initiate session:', error);
-      alert("UPLINK_FAILURE: Core refused to generate new session ID.");
-    }
+  const handleNewConversation = () => {
+    window.history.pushState({}, '', `?chat=new`);
+    setCurrentConversationId('new');
   };
 
   const handleRenameConversation = async (id, newTitle) => {
@@ -209,7 +207,7 @@ function App() {
        return;
     }
 
-    if (!targetId) {
+    if (!targetId || targetId === 'new') {
       try {
         const newConv = await api.createConversation();
         setConversations(prev => [{ id: newConv.id, title: "NEW DELIBERATION", created_at: new Date().toISOString() }, ...prev]);

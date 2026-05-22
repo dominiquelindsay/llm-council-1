@@ -67,12 +67,21 @@ def list_conversations() -> List[Dict[str, Any]]:
             try:
                 with open(path, 'r') as f:
                     data = json.load(f)
-                    conversations.append({
-                        "id": data["id"],
-                        "created_at": data["created_at"],
-                        "title": data.get("title", "New Conversation"),
-                        "message_count": len(data.get("messages", []))
-                    })
+                
+                # Proactively clean up legacy/accidental blank conversations
+                if len(data.get("messages", [])) == 0:
+                    try:
+                        os.remove(path)
+                    except OSError:
+                        pass
+                    continue
+
+                conversations.append({
+                    "id": data["id"],
+                    "created_at": data["created_at"],
+                    "title": data.get("title", "New Conversation"),
+                    "message_count": len(data.get("messages", []))
+                })
             except (json.JSONDecodeError, KeyError, OSError):
                 # Skip corrupted or locked files so the Sidebar doesn't break
                 continue
