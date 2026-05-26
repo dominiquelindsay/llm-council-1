@@ -68,4 +68,4 @@ TEMPERATURE = 0.8
 
 # --- ENDPOINTS & PATHS ---
 OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
-DATA_DIR = os.getenv("DATA_DIR", "G:/llm-council/data/conversations")
+DATA_DIR = os.getenv("DATA_DIR", os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "conversations"))

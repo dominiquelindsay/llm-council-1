@@ -59,6 +59,7 @@ function App() {
     const chatParam = params.get('chat');
     return (chatParam === 'null' || !chatParam) ? null : chatParam;
   });
+  const [splashKey, setSplashKey] = useState(0);
   
   const [currentConversation, setCurrentConversation] = useState(null);
   const [isFetching, setIsFetching] = useState(false);
@@ -322,7 +323,13 @@ function App() {
         trashedConversations={trashedConversations}
         currentConversationId={currentConversationId}
         activeStreams={activeStreams} /* V9.9.6: DATA FEED CONNECTED */
-        onSelectConversation={(id) => { window.history.pushState({}, '', `?chat=${id}`); setCurrentConversationId(id); }}
+        onSelectConversation={(id) => { 
+          window.history.pushState({}, '', `?chat=${id}`); 
+          setCurrentConversationId(id); 
+          if (id === null) {
+            setSplashKey(prev => prev + 1);
+          }
+        }}
         onNewConversation={handleNewConversation}
         onDeleteConversation={handleSoftDelete}
         onRestoreConversation={handleRestore}
@@ -359,6 +366,7 @@ function App() {
         onSendMessage={handleSendMessage}
         onClearHistory={handleClearHistory}
         isLoading={displayLoading}
+        splashKey={splashKey}
       />
     </div>
   );

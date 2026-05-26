@@ -105,7 +105,7 @@ const Sidebar = ({
       `}</style>
 
       {/* COMMAND HEADER */}
-      <div style={{ padding: '45px 30px 30px', textAlign: 'center', borderBottom: '1px solid #1c1c22' }}>
+      <div style={{ padding: '45px clamp(8px, calc(var(--sidebar-width) * 0.05), 24px) 30px', textAlign: 'center', borderBottom: '1px solid #1c1c22' }}>
         <div 
           onClick={() => onSelectConversation(null)} 
           onMouseEnter={() => setIsLogoHovered(true)}
@@ -135,23 +135,9 @@ const Sidebar = ({
         
         <button 
           onClick={onNewConversation} 
-          style={{ 
-            width: '100%', 
-            background: '#050508', 
-            border: '1px solid #00f2ff', 
-            color: '#00f2ff', 
-            padding: '16px', 
-            fontSize: '11px', 
-            cursor: 'pointer', 
-            letterSpacing: '4px', 
-            fontWeight: '900',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '12px'
-          }}
+          className="new-session-btn"
         >
-          <span style={{ fontSize: '18px' }}>&gt;</span> INITIATE_NEW_SESSION
+          <span style={{ fontSize: '1.25em' }}>&gt;</span> INITIATE_NEW_SESSION
           <div style={{ width: '10px', height: '10px', background: '#00f2ff', boxShadow: '0 0 10px #00f2ff' }} />
         </button>
 
@@ -210,7 +196,7 @@ const Sidebar = ({
       {/* SCROLLABLE CONTENT AREA */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
         
-        <div style={{ fontSize: '9px', color: '#444', letterSpacing: '3px', fontWeight: 'bold', marginBottom: '15px' }}>
+        <div style={{ fontSize: '9px', color: 'rgba(0, 242, 255, 0.5)', letterSpacing: '3px', fontWeight: 'bold', marginBottom: '15px' }}>
           /// ACTIVE_ARCHIVES_INDEX
         </div>
         
@@ -329,7 +315,7 @@ const Sidebar = ({
         )}
       </div>
 
-      <div style={{ padding: '20px 30px', borderTop: '1px solid #1c1c22', fontSize: '9px', color: '#222', fontFamily: 'monospace', letterSpacing: '2px' }}>
+      <div style={{ padding: '20px 30px', borderTop: '1px solid #1c1c22', fontSize: '9px', color: 'rgba(255, 255, 255, 0.3)', fontFamily: 'monospace', letterSpacing: '2px' }}>
         ACCESS_LEVEL: DIRECTOR // ENCRYPTION: AES_256_SIGMA
       </div>
     </div>

@@ -526,313 +526,6 @@ const Splash = () => {
           z-index: 0;
           pointer-events: none;
         }
-
-        .hud-header-top-right {
-          position: absolute;
-          top: clamp(15px, 2.5%, 30px);
-          right: clamp(15px, 3%, 40px);
-          color: #00f2ff;
-          font-family: monospace;
-          font-size: clamp(10px, 1.1vw, 16px);
-          letter-spacing: clamp(1px, 0.2vw, 3px);
-          z-index: 15;
-          opacity: 0.7;
-          transform: translateZ(30px);
-          transition: all 0.3s ease;
-        }
-
-        .hud-header-top-left {
-          position: absolute;
-          top: clamp(15px, 2.5%, 30px);
-          left: clamp(15px, 3%, 40px);
-          color: #00f2ff;
-          font-family: monospace;
-          font-size: clamp(8px, 0.9vw, 12px);
-          opacity: 0.4;
-          line-height: 1.5;
-          z-index: 15;
-          transform: translateZ(25px);
-          transition: all 0.3s ease;
-        }
-
-        .hud-title-wrapper {
-          position: absolute;
-          top: 7%;
-          width: 100%;
-          text-align: center;
-          z-index: 15;
-          transform: translateZ(50px);
-          transition: all 0.3s ease;
-        }
-        @media (max-width: 1200px) {
-          .hud-title-wrapper {
-            top: 6%;
-          }
-        }
-        @media (max-width: 768px) {
-          .hud-title-wrapper {
-            top: 5%;
-          }
-        }
-
-        .dynamic-title {
-          font-size: clamp(24px, 4vw, 55px);
-          font-weight: 900;
-          letter-spacing: clamp(6px, 1.2vw, 18px);
-          font-family: "Arial Black", sans-serif;
-          color: #e0ffff;
-          text-shadow: 0 0 20px rgba(0, 242, 255, 0.5);
-          transition: all 0.3s ease;
-          display: inline-block;
-        }
-
-        .neon-ghost-title {
-          color: #00f2ff;
-          font-size: clamp(14px, 2.2vw, 28px);
-          letter-spacing: clamp(4px, 0.6vw, 8px);
-          font-family: monospace;
-          font-weight: bold;
-          transition: all 0.3s ease;
-          display: inline-block;
-        }
-
-        .hud-panel-left {
-          position: absolute;
-          top: 30%;
-          left: 40px;
-          width: 280px;
-          height: auto;
-          z-index: 15;
-          transform: translateZ(40px);
-          transition: all 0.3s ease;
-          transform-origin: top left;
-        }
-        @media (max-width: 1400px) {
-          .hud-panel-left {
-            transform: translateZ(40px) scale(0.85) !important;
-            left: 20px !important;
-            top: 31% !important;
-          }
-        }
-        @media (max-width: 1200px) {
-          .hud-panel-left {
-            transform: translateZ(40px) scale(0.72) !important;
-            left: 15px !important;
-            top: 32% !important;
-          }
-        }
-        @media (max-width: 1024px) {
-          .hud-panel-left {
-            transform: translateZ(40px) scale(0.62) !important;
-            left: 10px !important;
-            top: 33% !important;
-          }
-        }
-        @media (max-width: 900px) {
-          .hud-panel-left {
-            display: none !important;
-          }
-        }
-
-        .hud-panel-right {
-          position: absolute;
-          top: 30%;
-          right: 40px;
-          width: 310px;
-          height: 48%;
-          z-index: 15;
-          transform: translateZ(40px);
-          transition: all 0.3s ease;
-          transform-origin: top right;
-        }
-        @media (max-width: 1400px) {
-          .hud-panel-right {
-            transform: translateZ(40px) scale(0.85) !important;
-            right: 20px !important;
-            top: 31% !important;
-          }
-        }
-        @media (max-width: 1200px) {
-          .hud-panel-right {
-            transform: translateZ(40px) scale(0.72) !important;
-            right: 15px !important;
-            top: 32% !important;
-          }
-        }
-        @media (max-width: 1024px) {
-          .hud-panel-right {
-            transform: translateZ(40px) scale(0.62) !important;
-            right: 10px !important;
-            top: 33% !important;
-          }
-        }
-        @media (max-width: 900px) {
-          .hud-panel-right {
-            display: none !important;
-          }
-        }
-
-
-        .hud-central-telemetry {
-          position: absolute;
-          top: 52%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          width: 90vw;
-          max-width: 1500px;
-          height: 72vh;
-          max-height: 740px;
-          border: 1px solid rgba(0, 242, 255, 0.12);
-          pointer-events: none;
-          z-index: 2;
-          box-shadow: inset 0 0 30px rgba(0, 242, 255, 0.03);
-          transform-style: preserve-3d;
-          transition: all 0.3s ease;
-        }
-        @media (max-width: 1024px) {
-          .hud-central-telemetry {
-            width: 95vw;
-            height: 60vh;
-          }
-        }
-        @media (max-height: 800px) {
-          .hud-central-telemetry {
-            height: 65vh;
-          }
-        }
-
-        .hud-video-reveal {
-          position: absolute; 
-          top: 52%; 
-          left: 50%; 
-          transform: translate(-50%, -50%) scale(1.5); 
-          width: 90vw;
-          max-width: 1500px;
-          height: 72vh;
-          max-height: 740px;
-          opacity: 0.88; 
-          mixBlendMode: screen; 
-          pointerEvents: none; 
-          z-index: 1;
-          object-fit: contain;
-          mask-image: radial-gradient(circle, rgba(0,0,0,1) 35%, rgba(0,0,0,0.85) 60%, rgba(0,0,0,0) 86%);
-          WebkitMaskImage: radial-gradient(circle, rgba(0,0,0,1) 35%, rgba(0,0,0,0.85) 60%, rgba(0,0,0,0) 86%);
-          transition: all 0.3s ease;
-        }
-        @media (max-width: 1024px) {
-          .hud-video-reveal {
-            width: 95vw;
-            height: 60vh;
-            transform: translate(-50%, -50%) scale(1.2); 
-          }
-        }
-        @media (max-height: 800px) {
-          .hud-video-reveal {
-            height: 65vh;
-          }
-        }
-
-        .hud-footer-classified {
-          position: absolute;
-          bottom: 12%;
-          width: 100%;
-          text-align: center;
-          z-index: 15;
-          transform: translateZ(35px);
-          transition: all 0.3s ease;
-        }
-        @media (max-width: 1200px) {
-          .hud-footer-classified {
-            bottom: 24%;
-          }
-        }
-        @media (max-width: 1024px) {
-          .hud-footer-classified {
-            bottom: 26%;
-          }
-        }
-        @media (max-width: 768px) {
-          .hud-footer-classified {
-            bottom: 28%;
-          }
-        }
-
-        .hud-footer-uplink-text {
-          color: #00f2ff;
-          font-family: monospace;
-          font-size: clamp(10px, 1.1vw, 16px);
-          letter-spacing: clamp(1px, 0.2vw, 3px);
-          opacity: 0.7;
-          margin-top: 15px;
-          transition: all 0.3s ease;
-        }
-
-        .hud-boot-logs {
-          display: none !important;
-        }
-        .boot-logs-feed {
-          display: flex;
-          flex-direction: column;
-          gap: 3px;
-          font-size: 10px;
-          color: #00f2ff;
-          letter-spacing: 1px;
-          opacity: 0.8;
-          height: 110px;
-          width: 420px;
-          overflow: hidden;
-          transition: all 0.3s ease;
-        }
-        @media (max-width: 1200px) {
-          .hud-boot-logs {
-            left: 20px;
-            bottom: 4%;
-          }
-        }
-        @media (max-width: 1024px) {
-          .hud-boot-logs {
-            width: calc(100% - 40px) !important;
-            max-width: 600px;
-          }
-          .boot-logs-feed {
-            width: 100% !important;
-          }
-        }
-        @media (max-width: 768px) {
-          .hud-boot-logs {
-            left: 15px;
-          }
-          .boot-logs-feed {
-            height: 90px;
-          }
-        }
-
-        .sigma-glitch-text {
-          animation: cyber-glitch 4s infinite;
-          color: #ff3e3e;
-          font-size: clamp(12px, 2vw, 28px);
-          font-weight: bold;
-          letter-spacing: clamp(2px, 0.3vw, 4px);
-          display: inline-block;
-        }
-
-        .hud-status-online {
-          color: #00ff41;
-          font-size: clamp(11px, 1.3vw, 18px);
-          font-weight: bold;
-          letter-spacing: clamp(1px, 0.15vw, 2px);
-          text-shadow: 0 0 10px rgba(0, 255, 65, 0.3);
-          animation: subtle-star-pulse 3s infinite;
-        }
-
-        .hud-awaiting-input {
-          display: none !important;
-        }
-        @media (max-width: 1024px) {
-          .hud-awaiting-input {
-            display: none !important;
-          }
-        }
       `}</style>
 
       {/* BACKGROUND GRID */}
@@ -859,28 +552,30 @@ const Splash = () => {
       {/* INTERACTIVE 3D TILT CONTAINER */}
       <div style={tiltStyle}>
 
-        {/* TOP-RIGHT CORNER TELEMETRY REMOVED FOR CLEANUP */}
-
-        {/* STAGGERED DECRYPTING TITLE HUD */}
-        <div className="hud-title-wrapper">
-          <span className="dynamic-title">
-            <ScrambledText text="THE COUNCIL" speed={25} delay={100} />
-          </span><br/>
-          <span className="neon-ghost-title">
-            <ScrambledText text="NEON_GHOST" speed={30} delay={650} />
-          </span>
-          <br/>
-          <div style={{ color: '#00f2ff', fontFamily: 'monospace', fontSize: '12px', opacity: 0.4, lineHeight: '1.5', marginTop: '15px', letterSpacing: '1px' }}>
-            UPLINK_STABILITY: 99.8%<br/>
-            HEX_OFFSET: 0x4F2A<br/>
-            COORD: 36.1699° N, 115.1398° W
-          </div>
+        {/* HEADER HUD */}
+        <div style={{ position: 'absolute', top: '30px', right: '40px', color: '#00f2ff', fontFamily: 'monospace', fontSize: '16px', letterSpacing: '3px', zIndex: 15, opacity: 0.7, transform: 'translateZ(30px)' }}>
+          USER_UPLINK: DR_LINDSAY // AUTH: DIRECTOR
         </div>
 
-        {/* TOP-LEFT TELEMETRY DECENTRALIZED FOR CLEANUP */}
+        {/* STAGGERED DECRYPTING TITLE HUD */}
+        <div style={{ position: 'absolute', top: '7%', width: '100%', textAlign: 'center', zIndex: 15, transform: 'translateZ(50px)' }}>
+          <span className="dynamic-title" style={{ fontSize: '55px', fontWeight: '900', letterSpacing: '18px', fontFamily: '"Arial Black", sans-serif', color: '#e0ffff', textShadow: '0 0 20px rgba(0, 242, 255, 0.5)' }}>
+            <ScrambledText text="THE COUNCIL" speed={25} delay={100} />
+          </span><br/>
+          <span className="neon-ghost-title" style={{ color: '#00f2ff', fontSize: '28px', fontWeight: 'bold', letterSpacing: '8px', fontFamily: 'monospace' }}>
+            <ScrambledText text="NEON_GHOST" speed={30} delay={650} />
+          </span>
+        </div>
+
+        {/* SCI-FI DATA STREAMS (CORNERS) */}
+        <div style={{ position: 'absolute', top: '30px', left: '40px', color: '#00f2ff', fontFamily: 'monospace', fontSize: '12px', opacity: 0.4, lineHeight: '1.5', zIndex: 15, transform: 'translateZ(25px)' }}>
+          UPLINK_STABILITY: 99.8%<br/>
+          HEX_OFFSET: 0x4F2A<br/>
+          COORD: 36.1699° N, 115.1398° W
+        </div>
 
         {/* LEFT MODULAR HUD PANEL: DIAGNOSTICS */}
-        <div className="hud-console-card hud-panel-left" style={{ zIndex: 15, transform: 'translateZ(40px)' }}>
+        <div className="hud-console-card" style={{ position: 'absolute', top: '15%', left: '40px', width: '280px', height: 'auto', zIndex: 15, transform: 'translateZ(40px)' }}>
           <div className="hud-card-header">
             <span>// SYSTEM DIAGNOSTICS</span>
             <span style={{ color: '#00ff41' }}>LIVE</span>
@@ -996,7 +691,7 @@ const Splash = () => {
         </div>
 
         {/* RIGHT MODULAR HUD PANEL: CRYPTO FEED */}
-        <div className="hud-console-card hud-panel-right" style={{ zIndex: 15, transform: 'translateZ(40px)' }}>
+        <div className="hud-console-card" style={{ position: 'absolute', top: '15%', right: '40px', width: '310px', height: '48%', zIndex: 15, transform: 'translateZ(40px)' }}>
           <div className="hud-card-header">
             <span>// CRYPTO_DECRYPTION_LOG</span>
             <span className="terminal-cursor" style={{ background: '#00f2ff', width: '6px', height: '10px' }} />
@@ -1016,15 +711,33 @@ const Splash = () => {
         </div>
 
         {/* CENTRAL TACTICAL TELEMETRY CAMERA BRACKETS */}
-        <div className="hud-central-telemetry">
+        <div style={{
+          position: 'absolute',
+          top: '52%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: '90vw',
+          maxWidth: '1500px',
+          height: '72vh',
+          maxHeight: '740px',
+          border: '1px solid rgba(0, 242, 255, 0.12)',
+          pointerEvents: 'none',
+          zIndex: 2,
+          boxShadow: 'inset 0 0 30px rgba(0, 242, 255, 0.03)',
+          transformStyle: 'preserve-3d'
+        }}>
           {/* Corner Ticks */}
           <div style={{ position: 'absolute', top: '-2px', left: '-2px', width: '15px', height: '15px', borderLeft: '3px solid #00f2ff', borderTop: '3px solid #00f2ff' }} />
           <div style={{ position: 'absolute', top: '-2px', right: '-2px', width: '15px', height: '15px', borderRight: '3px solid #00f2ff', borderTop: '3px solid #00f2ff' }} />
           <div style={{ position: 'absolute', bottom: '-2px', left: '-2px', width: '15px', height: '15px', borderLeft: '3px solid #00f2ff', borderBottom: '3px solid #00f2ff' }} />
           <div style={{ position: 'absolute', bottom: '-2px', right: '-2px', width: '15px', height: '15px', borderRight: '3px solid #00f2ff', borderBottom: '3px solid #00f2ff' }} />
           
-          {/* FOCUS_FEED_01 telemetry text removed for declutter */}
-          {/* RESOLVE: 1080P telemetry text removed for declutter */}
+          <div style={{ position: 'absolute', top: '10px', left: '10px', color: 'rgba(0, 242, 255, 0.45)', fontFamily: 'monospace', fontSize: '9px', letterSpacing: '1px', transform: 'translateZ(10px)' }}>
+            FOCUS_FEED_01 // REF: VAULT_REVEAL_UPLINK
+          </div>
+          <div style={{ position: 'absolute', bottom: '10px', right: '10px', color: 'rgba(0, 242, 255, 0.45)', fontFamily: 'monospace', fontSize: '9px', letterSpacing: '1px', transform: 'translateZ(10px)' }}>
+            RESOLVE: 1080P // COMPRESSION: H264
+          </div>
         </div>
 
         {/* CORE LOGO: VIDEO REVEAL (CINEMATIC IMMERSIVE SCALE) */}
@@ -1034,28 +747,39 @@ const Splash = () => {
           muted 
           loop={false}
           playsInline
-          className="hud-video-reveal"
+          style={{ 
+            position: 'absolute', 
+            top: '52%', 
+            left: '50%', 
+            transform: 'translate(-50%, -50%) scale(1.5)', 
+            width: '90vw',
+            maxWidth: '1500px',
+            height: '72vh',
+            maxHeight: '740px',
+            opacity: 0.88, 
+            mixBlendMode: 'screen', 
+            pointerEvents: 'none', 
+            zIndex: 1,
+            objectFit: 'contain',
+            maskImage: 'radial-gradient(circle, rgba(0,0,0,1) 35%, rgba(0,0,0,0.85) 60%, rgba(0,0,0,0) 86%)',
+            WebkitMaskImage: 'radial-gradient(circle, rgba(0,0,0,1) 35%, rgba(0,0,0,0.85) 60%, rgba(0,0,0,0) 86%)'
+          }} 
         />
 
         {/* SENSORY SCAN SWEEP */}
         <div style={{ position: 'absolute', width: '100%', height: '50px', background: 'rgba(0, 242, 255, 0.05)', boxShadow: '0 0 20px rgba(0, 242, 255, 0.1)', top: '-100px', zIndex: 5, animation: 'scan-sweep 12s infinite linear', pointerEvents: 'none' }} />
 
         {/* FOOTER HUD */}
-        <div className="hud-footer-classified">
-          <span className="sigma-glitch-text">
-            PRIORITY: SIGMA<br/>ACCESS: CLASSIFIED
-          </span>
-          <div className="hud-footer-uplink-text">
-            USER_UPLINK: DR_LINDSAY // AUTH: DIRECTOR
-          </div>
+        <div style={{ position: 'absolute', bottom: '8%', width: '100%', textAlign: 'center', zIndex: 15, transform: 'translateZ(35px)' }}>
+          <span className="sigma-glitch-text" style={{ animation: 'cyber-glitch 4s infinite', color: '#ff3e3e', fontSize: '28px', fontWeight: 'bold', letterSpacing: '4px' }}>PRIORITY: SIGMA // ACCESS: CLASSIFIED</span>
         </div>
 
         {/* TACTICAL LIVE HUD BOOT LOGS (BOTTOM-LEFT) */}
-        <div className="hud-boot-logs">
-          <div className="hud-status-online">
+        <div style={{ position: 'absolute', bottom: '6%', left: '40px', zIndex: 15, fontFamily: 'monospace', display: 'flex', flexDirection: 'column', gap: '8px', textAlign: 'left', transform: 'translateZ(30px)' }}>
+          <div style={{ color: '#00ff41', fontSize: '18px', fontWeight: 'bold', letterSpacing: '2px', textShadow: '0 0 10px rgba(0,255,65,0.3)', animation: 'subtle-star-pulse 3s infinite' }}>
             STATUS: ONLINE
           </div>
-          <div className="boot-logs-feed">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', fontSize: '10px', color: '#00f2ff', letterSpacing: '1px', opacity: 0.8, height: '110px', width: '420px', overflow: 'hidden' }}>
             {visibleLogs.map((log, index) => (
               <div key={index} style={{ whiteSpace: 'nowrap' }}>
                 {log}{index === visibleLogs.length - 1 ? <span className="terminal-cursor" /> : ''}
@@ -1064,8 +788,7 @@ const Splash = () => {
           </div>
         </div>
 
-        {/* TACTICAL AWAITING INPUT STATUS ROW */}
-        <div className="hud-awaiting-input">
+        <div style={{ position: 'absolute', bottom: '8%', right: '40px', color: '#e0e0e0', fontFamily: 'monospace', fontSize: '22px', letterSpacing: '2px', zIndex: 15, display: 'flex', alignItems: 'center', gap: '10px', transform: 'translateZ(30px)' }}>
           <span className="flashing-arrow" style={{ animation: 'flash-arrow 1s step-end infinite', color: '#00f2ff', fontWeight: 'bold' }}>&gt;</span> AWAITING INPUT...
         </div>
       </div>
