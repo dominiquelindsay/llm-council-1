@@ -877,9 +877,16 @@ async def chat_stream(
 async def serve_frontend(full_path: str):
     frontend_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "frontend_build")
     file_path = os.path.join(frontend_dir, full_path)
+    
+    # SYSTEM DIAGNOSTIC PRINTS FOR RENDER DEBUGGING
+    print(f"[ SYSTEM ] serve_frontend: requested path = '{full_path}'")
+    print(f"[ SYSTEM ] serve_frontend: checking file = '{file_path}' (exists: {os.path.exists(file_path)})")
+    index_path = os.path.join(frontend_dir, "index.html")
+    print(f"[ SYSTEM ] serve_frontend: fallback index = '{index_path}' (exists: {os.path.exists(index_path)})")
+    
     if os.path.exists(file_path) and os.path.isfile(file_path):
         return FileResponse(file_path)
-    return FileResponse(os.path.join(frontend_dir, "index.html"))
+    return FileResponse(index_path)
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=5000)
