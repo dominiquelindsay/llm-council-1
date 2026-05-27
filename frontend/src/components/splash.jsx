@@ -1108,27 +1108,7 @@ const Splash = ({ onOpenMobileSidebar }) => {
           <span className="flashing-arrow" style={{ animation: 'flash-arrow 1s step-end infinite', color: '#00f2ff', fontWeight: 'bold' }}>&gt;</span> AWAITING INPUT...
         </div>
 
-        {/* MOBILE HUD TABS BAR */}
-        <div className="mobile-hud-tabs">
-          <button 
-            className={activeMobileTab === 'diagnostics' ? 'active' : ''} 
-            onClick={() => setActiveMobileTab('diagnostics')}
-          >
-            [ DIAG ]
-          </button>
-          <button 
-            className={activeMobileTab === 'matrix' ? 'active' : ''} 
-            onClick={() => setActiveMobileTab('matrix')}
-          >
-            [ MATRIX ]
-          </button>
-          <button 
-            className={activeMobileTab === 'decryption' ? 'active' : ''} 
-            onClick={() => setActiveMobileTab('decryption')}
-          >
-            [ CODE ]
-          </button>
-        </div>
+
       </div>
     </div>
   );
