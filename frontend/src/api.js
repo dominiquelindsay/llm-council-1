@@ -1,6 +1,6 @@
 // --- THE MASTER UPLINK CONFIGURATION ---
 // V9.9.4: Data Fragmentation Buffer & Strict Failsafes
-const SERVER_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const SERVER_URL = import.meta.env.VITE_API_URL || window.location.origin;
 const API_BASE = `${SERVER_URL}/api`; 
 
 export const api = {
