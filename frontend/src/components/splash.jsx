@@ -50,7 +50,7 @@ const ScrambledText = ({ text, speed = 35, delay = 0 }) => {
   return <span>{displayText || text.replace(/./g, '\u00a0')}</span>;
 };
 
-const Splash = () => {
+const Splash = ({ onOpenMobileSidebar }) => {
   const logLines = [
     "[  0.01 ] INITIALIZING SECURE UPLINK NODE...",
     "[  0.15 ] ESTABLISHING VPN TUNNEL // PROTOCOL: IPSEC_AES_256",
@@ -864,6 +864,44 @@ const Splash = () => {
 
         {/* STAGGERED DECRYPTING TITLE HUD */}
         <div className="hud-title-wrapper">
+          {/* MOBILE ONLY Splash Operator trigger */}
+          <button 
+            className="mobile-splash-operator-btn"
+            onClick={onOpenMobileSidebar}
+            style={{
+              display: 'none', /* Handled in CSS */
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 20px',
+              background: 'rgba(2, 2, 6, 0.85)',
+              border: '1px solid #00f2ff55',
+              color: '#00f2ff',
+              padding: '8px 18px',
+              fontFamily: 'monospace',
+              fontSize: '10px',
+              letterSpacing: '2px',
+              borderRadius: '4px',
+              backdropFilter: 'blur(8px)',
+              boxShadow: '0 0 15px rgba(0, 242, 255, 0.15), inset 0 0 10px rgba(0, 242, 255, 0.1)',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
+              outline: 'none'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(0, 242, 255, 0.15)';
+              e.currentTarget.style.borderColor = '#00f2ff';
+              e.currentTarget.style.boxShadow = '0 0 20px rgba(0, 242, 255, 0.4)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'rgba(2, 2, 6, 0.85)';
+              e.currentTarget.style.borderColor = '#00f2ff55';
+              e.currentTarget.style.boxShadow = '0 0 15px rgba(0, 242, 255, 0.15), inset 0 0 10px rgba(0, 242, 255, 0.1)';
+            }}
+          >
+            <span>☰ // OPERATOR</span>
+          </button>
+          <br className="mobile-splash-operator-br" style={{ display: 'none' }} />
+
           <span className="dynamic-title">
             <ScrambledText text="THE COUNCIL" speed={25} delay={100} />
           </span><br/>

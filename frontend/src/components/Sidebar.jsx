@@ -107,7 +107,42 @@ const Sidebar = ({
       `}</style>
 
       {/* COMMAND HEADER */}
-      <div style={{ padding: '45px clamp(8px, calc(var(--sidebar-width) * 0.05), 24px) 30px', textAlign: 'center', borderBottom: '1px solid #1c1c22' }}>
+      <div style={{ padding: '45px clamp(8px, calc(var(--sidebar-width) * 0.05), 24px) 30px', textAlign: 'center', borderBottom: '1px solid #1c1c22', position: 'relative' }}>
+        {/* MOBILE CLOSE HUD TRIGGER */}
+        <button 
+          className="mobile-close-sidebar-btn"
+          onClick={onCloseMobile}
+          style={{
+            position: 'absolute',
+            top: '15px',
+            right: '15px',
+            background: 'transparent',
+            border: '1px solid #ff3e3e66',
+            color: '#ff3e3e',
+            padding: '6px 12px',
+            fontSize: '9px',
+            fontFamily: 'monospace',
+            letterSpacing: '1px',
+            cursor: 'pointer',
+            borderRadius: '4px',
+            transition: 'all 0.2s',
+            fontWeight: 'bold',
+            display: 'none', /* Handled in CSS */
+            boxShadow: '0 0 10px rgba(255, 62, 62, 0.1)'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'rgba(255, 62, 62, 0.15)';
+            e.currentTarget.style.borderColor = '#ff3e3e';
+            e.currentTarget.style.boxShadow = '0 0 15px rgba(255, 62, 62, 0.3)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'transparent';
+            e.currentTarget.style.borderColor = '#ff3e3e66';
+            e.currentTarget.style.boxShadow = '0 0 10px rgba(255, 62, 62, 0.1)';
+          }}
+        >
+          [ X ] // CLOSE_HUD
+        </button>
         <div 
           onClick={() => onSelectConversation(null)} 
           onMouseEnter={() => setIsLogoHovered(true)}

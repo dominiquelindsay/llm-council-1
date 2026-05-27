@@ -238,7 +238,7 @@ const CinematicStage = ({ title, data, color }) => {
   );
 };
 
-const ChatInterface = ({ conversation, onSendMessage, onClearHistory, isLoading, splashKey }) => {
+const ChatInterface = ({ conversation, onSendMessage, onClearHistory, isLoading, splashKey, onOpenMobileSidebar }) => {
   const [inputValue, setInputValue] = useState('');
   const [intelligenceTier, setIntelligenceTier] = useState('pro');
   const [visualEngine, setVisualEngine] = useState('dall-e-3'); 
@@ -403,7 +403,7 @@ const ChatInterface = ({ conversation, onSendMessage, onClearHistory, isLoading,
 
       <div style={{ flex: 1, position: 'relative', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
         {showRadar && <Radar />}
-        {isSplash ? <Splash key={splashKey} /> : isUplinkEstablished ? (
+        {isSplash ? <Splash key={splashKey} onOpenMobileSidebar={onOpenMobileSidebar} /> : isUplinkEstablished ? (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
             
             <form 
