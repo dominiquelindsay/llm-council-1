@@ -5,12 +5,19 @@ import os
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 from pathlib import Path
-from config import DATA_DIR
+from .config import DATA_DIR
 
 
 def ensure_data_dir():
     """Ensure the data directory exists."""
-    Path(DATA_DIR).mkdir(parents=True, exist_ok=True)
+    global DATA_DIR
+    try:
+        Path(DATA_DIR).mkdir(parents=True, exist_ok=True)
+    except Exception as e:
+        print(f"[ SYSTEM ] WARNING: Failed to create DATA_DIR at '{DATA_DIR}' ({e}). Falling back to local directory.")
+        fallback_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "conversations")
+        DATA_DIR = fallback_dir
+        Path(DATA_DIR).mkdir(parents=True, exist_ok=True)
 
 
 def get_conversation_path(conversation_id: str) -> str:

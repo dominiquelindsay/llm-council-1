@@ -50,14 +50,14 @@ from typing import List, Optional
 from datetime import datetime
 
 # Local Imports
-from config import (
+from .config import (
     OPENROUTER_API_KEY, 
     TIERS, 
     OPENROUTER_API_URL,
     MAX_TOKENS,
     TEMPERATURE
 )
-import storage 
+from . import storage 
 
 app = FastAPI(title="LLM Council - Intelligence Collective")
 
@@ -86,8 +86,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
-app.mount("/assets", StaticFiles(directory="frontend_build/assets"), name="frontend_assets")
+app.mount("/static", StaticFiles(directory=os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")), name="static")
+app.mount("/assets", StaticFiles(directory=os.path.join(os.path.dirname(os.path.abspath(__file__)), "frontend_build", "assets")), name="frontend_assets")
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("council_api")
