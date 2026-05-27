@@ -341,10 +341,10 @@
     align-items: center;
     justify-content: center;
     position: fixed;
-    top: 20px;
-    left: 20px;
-    z-index: 99;
-    background: rgba(2, 2, 6, 0.8);
+    top: 15px;
+    left: 15px;
+    z-index: 9999 !important;
+    background: rgba(2, 2, 6, 0.85);
     border: 1px solid #00f2ff55;
     color: #00f2ff;
     padding: 8px 16px;
@@ -487,5 +487,25 @@
   }
   .logo-text-overlay {
     font-size: 1.2rem !important; /* Prevent text collisions */
+  }
+  
+  /* Prevent horizontal stretch by hiding the wide desktop button rows in chat header */
+  .chat-header-bar > div:last-child {
+    display: none !important;
+  }
+  
+  /* Give padding on the left to make room for ☰ // OPERATOR floating on top */
+  .chat-header-bar {
+    padding-left: 140px !important;
+    justify-content: flex-start !important;
+    background: #0e1217 !important;
+    border-bottom: 1px solid #00f2ff22 !important;
+  }
+  
+  /* Make header text slightly smaller to fit perfectly */
+  .chat-header-bar > div:first-child {
+    font-size: 8px !important;
+    letter-spacing: 1px !important;
+    white-space: nowrap;
   }
 }
