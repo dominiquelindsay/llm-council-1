@@ -64,6 +64,7 @@ const Splash = () => {
   ];
 
   const [visibleLogs, setVisibleLogs] = useState([]);
+  const [activeMobileTab, setActiveMobileTab] = useState('matrix');
   const [decryptionLogs, setDecryptionLogs] = useState([]);
   const [cpuUsage, setCpuUsage] = useState(68);
   const [netWeave, setNetWeave] = useState(94.2);
@@ -880,7 +881,7 @@ const Splash = () => {
         {/* TOP-LEFT TELEMETRY DECENTRALIZED FOR CLEANUP */}
 
         {/* LEFT MODULAR HUD PANEL: DIAGNOSTICS */}
-        <div className="hud-console-card hud-panel-left" style={{ zIndex: 15, transform: 'translateZ(40px)' }}>
+        <div className={`hud-console-card hud-panel-left ${activeMobileTab === 'diagnostics' ? 'mobile-active' : ''}`} style={{ zIndex: 15, transform: 'translateZ(40px)' }}>
           <div className="hud-card-header">
             <span>// SYSTEM DIAGNOSTICS</span>
             <span style={{ color: '#00ff41' }}>LIVE</span>
@@ -996,7 +997,7 @@ const Splash = () => {
         </div>
 
         {/* RIGHT MODULAR HUD PANEL: CRYPTO FEED */}
-        <div className="hud-console-card hud-panel-right" style={{ zIndex: 15, transform: 'translateZ(40px)' }}>
+        <div className={`hud-console-card hud-panel-right ${activeMobileTab === 'decryption' ? 'mobile-active' : ''}`} style={{ zIndex: 15, transform: 'translateZ(40px)' }}>
           <div className="hud-card-header">
             <span>// CRYPTO_DECRYPTION_LOG</span>
             <span className="terminal-cursor" style={{ background: '#00f2ff', width: '6px', height: '10px' }} />
@@ -1067,6 +1068,28 @@ const Splash = () => {
         {/* TACTICAL AWAITING INPUT STATUS ROW */}
         <div className="hud-awaiting-input">
           <span className="flashing-arrow" style={{ animation: 'flash-arrow 1s step-end infinite', color: '#00f2ff', fontWeight: 'bold' }}>&gt;</span> AWAITING INPUT...
+        </div>
+
+        {/* MOBILE HUD TABS BAR */}
+        <div className="mobile-hud-tabs">
+          <button 
+            className={activeMobileTab === 'diagnostics' ? 'active' : ''} 
+            onClick={() => setActiveMobileTab('diagnostics')}
+          >
+            [ DIAG ]
+          </button>
+          <button 
+            className={activeMobileTab === 'matrix' ? 'active' : ''} 
+            onClick={() => setActiveMobileTab('matrix')}
+          >
+            [ MATRIX ]
+          </button>
+          <button 
+            className={activeMobileTab === 'decryption' ? 'active' : ''} 
+            onClick={() => setActiveMobileTab('decryption')}
+          >
+            [ CODE ]
+          </button>
         </div>
       </div>
     </div>

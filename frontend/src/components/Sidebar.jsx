@@ -11,7 +11,9 @@ const Sidebar = ({
   onDeleteConversation, 
   onRestoreConversation, 
   onPermanentDelete,
-  onRenameConversation 
+  onRenameConversation,
+  mobileOpen,
+  onCloseMobile
 }) => {
   const [isLogoHovered, setIsLogoHovered] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -42,7 +44,7 @@ const Sidebar = ({
   );
 
   return (
-    <div className="sidebar" style={{ 
+    <div className={`sidebar ${mobileOpen ? 'open' : ''}`} style={{ 
       width: 'var(--sidebar-width, 340px)', 
       background: '#020204', 
       borderRight: 'none', 

@@ -8,6 +8,7 @@ import './App.css';
 function App() {
   const { councilConfig } = useCouncil();
   const [conversations, setConversations] = useState([]);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   
   const [sidebarWidth, setSidebarWidth] = useState(() => {
     const saved = localStorage.getItem('sidebar_width');
@@ -317,7 +318,21 @@ function App() {
   const displayLoading = activeStream ? activeStream.isThinking : isFetching;
 
   return (
-    <div className="app" style={{ '--sidebar-width': `${sidebarWidth}px` }}>
+    <div className={`app ${mobileSidebarOpen ? 'sidebar-open' : ''}`} style={{ '--sidebar-width': `${sidebarWidth}px` }}>
+      {/* MOBILE DRAWER BACKDROP OVERLAY */}
+      <div 
+        className={`sidebar-overlay ${mobileSidebarOpen ? 'open' : ''}`} 
+        onClick={() => setMobileSidebarOpen(false)}
+      />
+
+      {/* FLOATING MOBILE OPERATOR TRIGGER */}
+      <button 
+        className="mobile-operator-btn"
+        onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
+      >
+        <span>☰ // OPERATOR</span>
+      </button>
+
       <Sidebar
         conversations={conversations}
         trashedConversations={trashedConversations}
@@ -329,16 +344,23 @@ function App() {
           if (id === null) {
             setSplashKey(prev => prev + 1);
           }
+          setMobileSidebarOpen(false); // Auto-close drawer on select!
         }}
-        onNewConversation={handleNewConversation}
+        onNewConversation={(tier) => {
+          handleNewConversation(tier);
+          setMobileSidebarOpen(false); // Auto-close drawer on new session!
+        }}
         onDeleteConversation={handleSoftDelete}
         onRestoreConversation={handleRestore}
         onPermanentDelete={handlePermanentDelete}
         onRenameConversation={handleRenameConversation}
+        mobileOpen={mobileSidebarOpen}
+        onCloseMobile={() => setMobileSidebarOpen(false)}
       />
       
       {/* DRAGGABLE SCI-FI DIVIDER */}
       <div 
+        className="draggable-divider"
         onMouseDown={startResizing}
         style={{
           width: '6px',
