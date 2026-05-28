@@ -398,16 +398,19 @@
     max-width: 100% !important;
     height: 100% !important;
     border-radius: 0 !important;
-    transform: translateY(-100%) !important;
+    transform: translateY(-110%) !important;
     transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1) !important;
     z-index: 1000 !important;
     border: none !important;
     background: rgba(2, 2, 4, 0.98) !important;
     backdrop-filter: blur(30px) !important;
-    box-shadow: 0 15px 50px rgba(0, 0, 0, 0.9) !important;
+    box-shadow: none !important;
+    visibility: hidden;
   }
   .sidebar.open {
     transform: translateY(0) !important;
+    box-shadow: 0 15px 50px rgba(0, 0, 0, 0.9) !important;
+    visibility: visible !important;
   }
   
   .draggable-divider {
@@ -642,30 +645,34 @@
     padding-bottom: 80px !important;
   }
   
-  .radar-container > div:first-child {
+  .radar-container .radar-header-block {
     padding: 20px 15px 10px 15px !important;
   }
   
-  .radar-container > div:first-child > div:nth-child(2) {
-    font-size: 16px !important;
-    letter-spacing: 4px !important;
-    line-height: 1.4 !important;
+  .radar-container .radar-title {
+    font-size: 13px !important;
+    letter-spacing: 2px !important;
+    line-height: 1.5 !important;
+    text-transform: uppercase !important;
+    white-space: normal !important;
+    word-break: normal !important;
     text-align: center !important;
+    width: 100% !important;
   }
   
   /* Filter controls - 3 columns grid stack */
-  .radar-container > div:first-child > div:last-child {
+  .radar-container .radar-header-block > div:last-child {
     display: grid !important;
     grid-template-columns: repeat(3, 1fr) !important;
     gap: 8px !important;
     margin-top: 15px !important;
   }
   
-  .radar-container > div:first-child > div:last-child > div {
+  .radar-container .radar-header-block > div:last-child > div {
     gap: 4px !important;
   }
   
-  .radar-container > div:first-child > div:last-child button {
+  .radar-container .radar-header-block > div:last-child button {
     padding: 6px 4px !important;
     font-size: 8px !important;
     letter-spacing: 1px !important;
@@ -673,17 +680,17 @@
   }
 
   /* Capacity / Seat allocation indicator layout */
-  .radar-container > div:first-child > div:nth-child(4) {
+  .radar-container .radar-header-block > div:nth-child(4) {
     margin-top: 10px !important;
     height: auto !important;
   }
 
   /* Roster Cards grid - single column and tight padding */
-  .radar-container > div:nth-child(3) {
+  .radar-container .radar-cards-grid {
     padding: 10px 15px !important;
   }
   
-  .radar-container > div:nth-child(3) > div:first-child {
+  .radar-container .radar-cards-grid > div:first-child {
     grid-template-columns: 1fr !important;
     gap: 15px !important;
   }

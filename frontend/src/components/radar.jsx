@@ -254,9 +254,9 @@ const Radar = () => {
         </div>
       )}
       
-      <div style={{ padding: '40px 60px 20px', textAlign: 'center' }}>
+      <div className="radar-header-block" style={{ padding: '40px 60px 20px', textAlign: 'center' }}>
         <div style={{ color: '#00ff41', fontSize: '12px', letterSpacing: '8px', marginBottom: '10px', opacity: 0.6 }}>SYSTEM_STATUS: OMNISCIENT</div>
-        <div style={{ color: '#fff', fontSize: '28px', fontWeight: '900', letterSpacing: '12px', textShadow: '0 0 20px rgba(255,255,255,0.2)' }}>COUNCIL_RADAR_V11.0</div>
+        <div className="radar-title" style={{ color: '#fff', fontSize: '28px', fontWeight: '900', letterSpacing: '12px', textShadow: '0 0 20px rgba(255,255,255,0.2)' }}>COUNCIL_RADAR_V11.0</div>
         {lastSync && (
           <div className="last-sync-timestamp">
             [ LAST_SYNC: {lastSync} ]
@@ -326,7 +326,7 @@ const Radar = () => {
         </div>
       </div>
 
-      <div style={{ padding: '20px 60px', maxWidth: '95vw', margin: '0 auto' }}>
+      <div className="radar-cards-grid" style={{ padding: '20px 60px', maxWidth: '95vw', margin: '0 auto' }}>
         <div style={{ 
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))',
@@ -359,7 +359,7 @@ const Radar = () => {
                   ? isActiveInAnyTier
                   : (activeFilter === 'ARBITER' ? isArbiterInAnyTier : (activeFilter === 'QUARANTINE' ? isQuarantined : isAssignedToActiveTier));
 
-                let cardOpacity = 0.3;
+                let cardOpacity = 0.75;
                 if (activeFilter === 'ALL') {
                   cardOpacity = 1;
                 } else if (activeFilter === 'ARBITER') {
