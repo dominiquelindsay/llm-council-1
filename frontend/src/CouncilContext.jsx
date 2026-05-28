@@ -139,19 +139,44 @@ export const CouncilProvider = ({ children }) => {
                               isArbiter: !!item.isArbiter
                             }));
     localStorage.setItem('council_memory', JSON.stringify(modified));
+
+    // Persist to backend server ONLY if we are NOT on mobile viewports (lock configurations on mobile!)
+    const isMobile = window.innerWidth <= 768;
+    if (!isMobile) {
+      const SERVER_URL = import.meta.env.VITE_API_URL || window.location.origin;
+      fetch(`${SERVER_URL}/api/council-memory`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(modified)
+      }).catch(err => console.error("FAILED_TO_PERSIST_COUNCIL_ROSTER:", err));
+    }
   };
 
   // 5. Ghost Exorcism Rehydration Logic: Apply historical configurations only to active OpenRouter models
   useEffect(() => {
     const fetchAndRehydrate = async () => {
       try {
+        let backendMemory = [];
+        try {
+          const SERVER_URL = import.meta.env.VITE_API_URL || window.location.origin;
+          const syncRes = await fetch(`${SERVER_URL}/api/council-memory`);
+          if (syncRes.ok) {
+            backendMemory = await syncRes.json();
+          }
+        } catch (e) {
+          console.warn("Backend sync check failed, falling back to local memory:", e);
+        }
+
         const response = await fetch('https://openrouter.ai/api/v1/models');
         const data = await response.json();
         
         // Read consolidated historical config
         const savedMemory = localStorage.getItem('council_memory');
         let parsedMemory = [];
-        if (savedMemory) {
+        if (backendMemory && backendMemory.length > 0) {
+          parsedMemory = backendMemory;
+          localStorage.setItem('council_memory', JSON.stringify(backendMemory));
+        } else if (savedMemory) {
           try {
             parsedMemory = JSON.parse(savedMemory);
           } catch (e) {}

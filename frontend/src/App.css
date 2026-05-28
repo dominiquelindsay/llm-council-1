@@ -368,8 +368,8 @@
   .radar-active .mobile-operator-btn {
     display: none !important;
   }
-  .mobile-close-radar-btn {
-    display: block !important;
+  .radar-status-text {
+    display: none !important;
   }
 }
 

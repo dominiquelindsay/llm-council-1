@@ -12,6 +12,7 @@ const formatDate = (date) => {
 
 const Radar = ({ onClose }) => {
   const { councilConfig, globalRoster, toggleTierMember, updateTierChairman, toggleQuarantine, purgeTierData } = useCouncil();
+  const isMobile = window.innerWidth <= 768;
   const [providers, setProviders] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const [toast, setToast] = useState(null);
@@ -76,6 +77,11 @@ const Radar = ({ onClose }) => {
   }, []);
 
   const handleToggle = (tier, modelId) => {
+    if (isMobile) {
+      setToast("TACTICAL LOCK: Visit operations_control_panel to allocate seats.");
+      setTimeout(() => setToast(null), 3500);
+      return;
+    }
     const isQuarantined = globalRoster.some(item => item.modelId === modelId && item.isQuarantined);
     if (isQuarantined) {
       setToast("Cannot activate quarantined node.");
@@ -90,6 +96,11 @@ const Radar = ({ onClose }) => {
   };
 
   const setGlobalArbiter = (slug) => {
+    if (isMobile) {
+      setToast("TACTICAL LOCK: Visit operations_control_panel to assign Arbiter.");
+      setTimeout(() => setToast(null), 3500);
+      return;
+    }
     const isQuarantined = globalRoster.some(item => item.modelId === slug && item.isQuarantined);
     if (isQuarantined) {
        setToast("Cannot assign Arbiter role to a quarantined node.");
@@ -268,41 +279,7 @@ const Radar = ({ onClose }) => {
       )}
       
       <div className="radar-header-block" style={{ padding: '40px 60px 20px', textAlign: 'center', position: 'relative' }}>
-        <button 
-          className="mobile-close-radar-btn" 
-          onClick={onClose}
-          style={{
-            position: 'absolute',
-            top: '20px',
-            right: '20px',
-            background: 'transparent',
-            border: '1px solid #ff3e3e66',
-            color: '#ff3e3e',
-            padding: '8px 16px',
-            fontSize: '10px',
-            fontFamily: 'monospace',
-            letterSpacing: '1px',
-            cursor: 'pointer',
-            borderRadius: '4px',
-            transition: 'all 0.2s',
-            fontWeight: 'bold',
-            boxShadow: '0 0 10px rgba(255, 62, 62, 0.1)',
-            display: 'none'
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'rgba(255, 62, 62, 0.15)';
-            e.currentTarget.style.borderColor = '#ff3e3e';
-            e.currentTarget.style.boxShadow = '0 0 15px rgba(255, 62, 62, 0.3)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'transparent';
-            e.currentTarget.style.borderColor = '#ff3e3e66';
-            e.currentTarget.style.boxShadow = '0 0 10px rgba(255, 62, 62, 0.1)';
-          }}
-        >
-          [ X ] // CLOSE_RADAR
-        </button>
-        <div style={{ color: '#00ff41', fontSize: '12px', letterSpacing: '8px', marginBottom: '10px', opacity: 0.6 }}>SYSTEM_STATUS: OMNISCIENT</div>
+        <div className="radar-status-text" style={{ color: '#00ff41', fontSize: '12px', letterSpacing: '8px', marginBottom: '10px', opacity: 0.6 }}>SYSTEM_STATUS: OMNISCIENT</div>
         <div className="radar-title" style={{ color: '#fff', fontSize: '28px', fontWeight: '900', letterSpacing: '12px', textShadow: '0 0 20px rgba(255,255,255,0.2)' }}>COUNCIL_RADAR_V11.0</div>
         {lastSync && (
           <div className="last-sync-timestamp">
@@ -334,7 +311,14 @@ const Radar = ({ onClose }) => {
               </button>
               <button
                 className="purge-btn"
-                onClick={() => setPurgeTarget(f)}
+                onClick={() => {
+                  if (isMobile) {
+                    setToast("TACTICAL LOCK: Visit operations_control_panel to purge.");
+                    setTimeout(() => setToast(null), 3500);
+                    return;
+                  }
+                  setPurgeTarget(f);
+                }}
                 style={{ whiteSpace: 'nowrap' }}
               >
                 [ PURGE {f} ]
@@ -372,6 +356,31 @@ const Radar = ({ onClose }) => {
           )}
         </div>
       </div>
+
+      {isMobile && (
+        <div style={{
+          margin: '20px auto 10px',
+          maxWidth: 'calc(100% - 40px)',
+          background: 'rgba(255, 62, 62, 0.05)',
+          border: '1px solid rgba(255, 62, 62, 0.3)',
+          borderLeft: '4px solid #ff3e3e',
+          padding: '20px',
+          fontFamily: 'monospace',
+          fontSize: '11px',
+          color: '#ff3e3e',
+          textAlign: 'center',
+          boxShadow: '0 0 15px rgba(255, 62, 62, 0.1)',
+          boxSizing: 'border-box'
+        }}>
+          <div style={{ fontWeight: 'bold', fontSize: '12px', letterSpacing: '2px', marginBottom: '8px', textShadow: '0 0 10px rgba(255, 62, 62, 0.4)' }}>
+            ⚠️ [ SECURITY_PROTOCOL: MOBILE_READ_ONLY_ACCESS ]
+          </div>
+          <div style={{ opacity: 0.9, lineHeight: '1.6', letterSpacing: '0.5px' }}>
+            COUNCIL ROSTER SEATS ARE STABLE AND LOCKED. TO CONFIGURE ALLOCATIONS, 
+            ACCESS THE <span style={{ color: '#00f2ff', fontWeight: 'bold', textShadow: '0 0 8px rgba(0, 242, 255, 0.4)' }}>OPERATIONS_CONTROL_PANEL</span> VIA A DESKTOP TERMINAL.
+          </div>
+        </div>
+      )}
 
       <div className="radar-cards-grid" style={{ padding: '20px 60px', maxWidth: '95vw', margin: '0 auto' }}>
         <div style={{ 
@@ -448,7 +457,14 @@ const Radar = ({ onClose }) => {
                       </div>
                       <button 
                         className={`quarantine-btn ${isQuarantined ? 'restorer' : ''}`}
-                        onClick={() => toggleQuarantine(m.slug)}
+                        onClick={() => {
+                          if (isMobile) {
+                            setToast("TACTICAL LOCK: Visit operations_control_panel to quarantine/restore.");
+                            setTimeout(() => setToast(null), 3500);
+                            return;
+                          }
+                          toggleQuarantine(m.slug);
+                        }}
                       >
                         {isQuarantined ? 'RESTORE_NODE' : 'QUARANTINE'}
                       </button>

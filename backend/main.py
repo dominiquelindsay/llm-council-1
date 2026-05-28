@@ -675,6 +675,31 @@ async def run_peer_review(model_name: str, original_prompt: str, council_respons
     return await get_model_response(model_name, review_prompt, history, base64_images, custom_max_tokens=400, custom_timeout=90.0)
 
 
+# --- COUNCIL CONFIGURATION MEMORY SYNC ENDPOINTS ---
+COUNCIL_MEMORY_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "council_memory.json")
+
+@app.get("/api/council-memory")
+async def get_council_memory():
+    if os.path.exists(COUNCIL_MEMORY_PATH):
+        try:
+            with open(COUNCIL_MEMORY_PATH, 'r') as f:
+                return json.load(f)
+        except Exception as e:
+            logger.error(f"Error reading council_memory.json: {e}")
+    return []
+
+@app.post("/api/council-memory")
+async def save_council_memory(payload: List[dict] = Body(...)):
+    try:
+        os.makedirs(os.path.dirname(COUNCIL_MEMORY_PATH), exist_ok=True)
+        with open(COUNCIL_MEMORY_PATH, 'w') as f:
+            json.dump(payload, f, indent=2)
+        return {"success": True}
+    except Exception as e:
+        logger.error(f"Error saving council_memory.json: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.get("/api/conversations")
 async def list_conversations():
     return storage.list_conversations()
