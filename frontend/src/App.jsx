@@ -9,6 +9,7 @@ function App() {
   const { councilConfig } = useCouncil();
   const [conversations, setConversations] = useState([]);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [showRadar, setShowRadar] = useState(false);
   
   const [sidebarWidth, setSidebarWidth] = useState(() => {
     const saved = localStorage.getItem('sidebar_width');
@@ -217,6 +218,47 @@ function App() {
     } catch (error) { console.error("Purge failed:", error); }
   };
 
+  const handleExportDossier = async (format) => {
+    if (!currentConversation?.messages?.length) {
+      alert("NO_DATA_TO_EXTRACT: There is no active conversation or data to compile.");
+      return;
+    }
+    try {
+      const response = await fetch(`${API_BASE}/api/export`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          format: format,
+          title: currentConversation.title || "UNNAMED_SESSION",
+          messages: currentConversation.messages,
+          tier: 'pro'
+        })
+      });
+      if (!response.ok) throw new Error("UPLINK_TIMEOUT");
+      
+      if (format === 'email') {
+        alert("TRANSMISSION SUCCESSFUL: Dossier queued for secure email dispatch.");
+        return;
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = `LOG_${currentConversation.title?.replace(/\s+/g, '_')}.${format}`;
+      document.body.appendChild(a);
+      a.click();
+      
+      setTimeout(() => {
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      }, 100);
+    } catch (err) {
+      alert("EXPORT_PROTOCOL_CRITICAL_FAILURE: Backend unreachable.");
+    }
+  };
+
   const handleSendMessage = async (content, files = [], tier = 'pro', visualEngine = 'dall-e-3') => {
     let targetId = currentConversationId;
 
@@ -356,6 +398,12 @@ function App() {
         onRenameConversation={handleRenameConversation}
         mobileOpen={mobileSidebarOpen}
         onCloseMobile={() => setMobileSidebarOpen(false)}
+        onToggleRadar={() => {
+          setShowRadar(!showRadar);
+          setMobileSidebarOpen(false); // Auto-close drawer so they see the radar!
+        }}
+        isRadarActive={showRadar}
+        onExportDossier={handleExportDossier}
       />
       
       {/* DRAGGABLE SCI-FI DIVIDER */}
@@ -390,6 +438,8 @@ function App() {
         isLoading={displayLoading}
         splashKey={splashKey}
         onOpenMobileSidebar={() => setMobileSidebarOpen(true)}
+        showRadar={showRadar}
+        setShowRadar={setShowRadar}
       />
     </div>
   );

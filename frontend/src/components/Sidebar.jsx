@@ -13,8 +13,12 @@ const Sidebar = ({
   onPermanentDelete,
   onRenameConversation,
   mobileOpen,
-  onCloseMobile
+  onCloseMobile,
+  onToggleRadar,
+  isRadarActive,
+  onExportDossier
 }) => {
+  const [showSidebarExport, setShowSidebarExport] = useState(false);
   const [isLogoHovered, setIsLogoHovered] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [editValue, setEditValue] = useState('');
@@ -168,6 +172,75 @@ const Sidebar = ({
             alt="Council Home" 
             style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
           />
+        </div>
+
+        {/* SCI-FI CONTROL TABS UNDER LOGO */}
+        <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginBottom: '25px', flexWrap: 'wrap' }}>
+          <button 
+            type="button"
+            onClick={onToggleRadar}
+            style={{
+              background: isRadarActive ? 'rgba(0, 242, 255, 0.15)' : '#050508',
+              color: '#00f2ff',
+              border: `1px solid ${isRadarActive ? '#00f2ff' : 'rgba(0, 242, 255, 0.3)'}`,
+              padding: '10px 15px',
+              fontSize: '10px',
+              fontWeight: 'bold',
+              fontFamily: 'monospace',
+              letterSpacing: '1.5px',
+              cursor: 'pointer',
+              borderRadius: '3px',
+              transition: 'all 0.2s',
+              boxShadow: isRadarActive ? '0 0 12px rgba(0, 242, 255, 0.3)' : 'none',
+              outline: 'none'
+            }}
+          >
+            {isRadarActive ? "[ CLOSE_RADAR ]" : "[ SYSTEM_RADAR ]"}
+          </button>
+
+          <div style={{ position: 'relative' }}>
+            <button 
+              type="button"
+              onClick={() => setShowSidebarExport(!showSidebarExport)}
+              style={{
+                background: showSidebarExport ? 'rgba(0, 242, 255, 0.15)' : '#050508',
+                color: '#00f2ff',
+                border: `1px solid ${showSidebarExport ? '#00f2ff' : 'rgba(0, 242, 255, 0.3)'}`,
+                padding: '10px 15px',
+                fontSize: '10px',
+                fontWeight: 'bold',
+                fontFamily: 'monospace',
+                letterSpacing: '1.5px',
+                cursor: 'pointer',
+                borderRadius: '3px',
+                transition: 'all 0.2s',
+                boxShadow: showSidebarExport ? '0 0 12px rgba(0, 242, 255, 0.3)' : 'none',
+                outline: 'none'
+              }}
+            >
+              [ EXPORT_DOSSIER ]
+            </button>
+            {showSidebarExport && (
+              <div style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', width: '180px', paddingTop: '8px', zIndex: 300 }}>
+                <div style={{ background: '#0e1217', border: '1px solid #00f2ff44', borderRadius: '4px', display: 'flex', flexDirection: 'column', boxShadow: '0 5px 25px rgba(0,0,0,0.6)', overflow: 'hidden' }}>
+                  {['pdf', 'docx', 'txt', 'email'].map(fmt => (
+                    <button 
+                      key={fmt} 
+                      onClick={() => {
+                        onExportDossier(fmt);
+                        setShowSidebarExport(false);
+                      }} 
+                      style={{ background: 'transparent', color: '#00f2ff', border: 'none', padding: '10px 15px', fontSize: '9px', cursor: 'pointer', textAlign: 'left', borderBottom: '1px solid #1c1c22', transition: 'background 0.2s', fontWeight: 'bold', fontFamily: 'monospace' }}
+                      onMouseEnter={(e) => e.target.style.background = '#00f2ff22'}
+                      onMouseLeave={(e) => e.target.style.background = 'transparent'}
+                    >
+                      &gt; {fmt === 'email' ? 'EMAIL_DOSSIER' : `DOWNLOAD_.${fmt.toUpperCase()}`}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
         
         <button 

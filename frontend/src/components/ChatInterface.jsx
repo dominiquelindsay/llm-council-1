@@ -238,11 +238,10 @@ const CinematicStage = ({ title, data, color }) => {
   );
 };
 
-const ChatInterface = ({ conversation, onSendMessage, onClearHistory, isLoading, splashKey, onOpenMobileSidebar }) => {
+const ChatInterface = ({ conversation, onSendMessage, onClearHistory, isLoading, splashKey, onOpenMobileSidebar, showRadar, setShowRadar }) => {
   const [inputValue, setInputValue] = useState('');
   const [intelligenceTier, setIntelligenceTier] = useState('pro');
   const [visualEngine, setVisualEngine] = useState('dall-e-3'); 
-  const [showRadar, setShowRadar] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [stagedFiles, setStagedFiles] = useState([]);
   const [isDragging, setIsDragging] = useState(false); 
