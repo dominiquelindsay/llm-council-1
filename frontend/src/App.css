@@ -630,4 +630,61 @@
   .app-in-splash .mobile-operator-btn {
     display: none !important;
   }
+
+  /* ==========================================================================
+     NEON GHOST: FULL SCREEN TACTICAL RADAR HUD ON MOBILE
+     ========================================================================== */
+  .radar-container {
+    left: 0 !important;
+    top: 60px !important;
+    width: 100% !important;
+    height: calc(100vh - 60px) !important;
+    padding-bottom: 80px !important;
+  }
+  
+  .radar-container > div:first-child {
+    padding: 20px 15px 10px 15px !important;
+  }
+  
+  .radar-container > div:first-child > div:nth-child(2) {
+    font-size: 16px !important;
+    letter-spacing: 4px !important;
+    line-height: 1.4 !important;
+    text-align: center !important;
+  }
+  
+  /* Filter controls - 3 columns grid stack */
+  .radar-container > div:first-child > div:last-child {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 8px !important;
+    margin-top: 15px !important;
+  }
+  
+  .radar-container > div:first-child > div:last-child > div {
+    gap: 4px !important;
+  }
+  
+  .radar-container > div:first-child > div:last-child button {
+    padding: 6px 4px !important;
+    font-size: 8px !important;
+    letter-spacing: 1px !important;
+    width: 100% !important;
+  }
+
+  /* Capacity / Seat allocation indicator layout */
+  .radar-container > div:first-child > div:nth-child(4) {
+    margin-top: 10px !important;
+    height: auto !important;
+  }
+
+  /* Roster Cards grid - single column and tight padding */
+  .radar-container > div:nth-child(3) {
+    padding: 10px 15px !important;
+  }
+  
+  .radar-container > div:nth-child(3) > div:first-child {
+    grid-template-columns: 1fr !important;
+    gap: 15px !important;
+  }
 }

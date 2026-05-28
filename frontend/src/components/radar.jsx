@@ -239,13 +239,13 @@ const Radar = () => {
   `;
 
   if (isLoading) return (
-    <div style={{ position: 'fixed', top: '60px', left: 'var(--sidebar-width, 340px)', right: 0, bottom: 0, background: '#020204', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#00f2ff', fontFamily: 'monospace', letterSpacing: '5px' }}>
+    <div className="radar-container" style={{ position: 'fixed', top: '60px', left: 'var(--sidebar-width, 340px)', right: 0, bottom: 0, background: '#020204', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#00f2ff', fontFamily: 'monospace', letterSpacing: '5px' }}>
       SYNCHRONIZING_QWEN_VL_DATABASE...
     </div>
   );
 
   return (
-    <div style={{ position: 'fixed', top: '60px', left: 'var(--sidebar-width, 340px)', right: 0, bottom: 0, zIndex: 1000, overflowY: 'auto', backdropFilter: 'blur(10px)', animation: 'flashlight-pulse 8s infinite ease-in-out', paddingBottom: '100px' }}>
+    <div className="radar-container" style={{ position: 'fixed', top: '60px', left: 'var(--sidebar-width, 340px)', right: 0, bottom: 0, zIndex: 1000, overflowY: 'auto', backdropFilter: 'blur(10px)', animation: 'flashlight-pulse 8s infinite ease-in-out', paddingBottom: '100px' }}>
       <style>{customStyles}</style>
 
       {toast && (
