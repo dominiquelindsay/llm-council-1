@@ -337,30 +337,39 @@
 
 @media (max-width: 768px) {
   .mobile-operator-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: fixed;
-    top: 15px;
-    left: 15px;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    position: fixed !important;
+    bottom: 90px !important;
+    top: auto !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
     z-index: 9999 !important;
-    background: rgba(2, 2, 6, 0.85);
-    border: 1px solid #00f2ff55;
-    color: #00f2ff;
-    padding: 8px 16px;
-    font-family: monospace;
-    font-size: 10px;
-    letter-spacing: 2px;
-    border-radius: 4px;
-    backdrop-filter: blur(8px);
-    box-shadow: 0 0 15px rgba(0, 242, 255, 0.1), inset 0 0 10px rgba(0, 242, 255, 0.1);
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    background: rgba(2, 2, 6, 0.9) !important;
+    border: 1px solid #00f2ffaa !important;
+    color: #00f2ff !important;
+    padding: 10px 24px !important;
+    font-family: monospace !important;
+    font-size: 11px !important;
+    letter-spacing: 2px !important;
+    border-radius: 30px !important;
+    backdrop-filter: blur(10px) !important;
+    box-shadow: 0 0 20px rgba(0, 242, 255, 0.35), inset 0 0 10px rgba(0, 242, 255, 0.15) !important;
+    cursor: pointer !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
   }
   .mobile-operator-btn:hover {
-    background: rgba(0, 242, 255, 0.15);
-    border-color: #00f2ff;
-    box-shadow: 0 0 20px rgba(0, 242, 255, 0.4);
+    background: rgba(0, 242, 255, 0.15) !important;
+    border-color: #00f2ff !important;
+    box-shadow: 0 0 25px rgba(0, 242, 255, 0.55) !important;
+  }
+  .sidebar-open .mobile-operator-btn,
+  .radar-active .mobile-operator-btn {
+    display: none !important;
+  }
+  .mobile-close-radar-btn {
+    display: block !important;
   }
 }
 
@@ -497,23 +506,27 @@
     font-size: 1.2rem !important; /* Prevent text collisions */
   }
   
-  /* Prevent horizontal stretch by hiding the wide desktop button rows in chat header */
+  /* Prevent horizontal stretch by hiding other header buttons but keeping the first (Radar) */
   .chat-header-bar > div:last-child {
+    display: flex !important;
+    gap: 8px !important;
+  }
+  .chat-header-bar > div:last-child > *:not(:first-child) {
     display: none !important;
   }
   
-  /* Give padding on the left to make room for ☰ // OPERATOR floating on top */
+  /* Centered and padded header for mobile layout */
   .chat-header-bar {
-    padding-left: 140px !important;
-    justify-content: flex-start !important;
+    padding: 0 15px !important;
+    justify-content: space-between !important;
     background: #0e1217 !important;
     border-bottom: 1px solid #00f2ff22 !important;
   }
   
   /* Make header text slightly smaller to fit perfectly */
   .chat-header-bar > div:first-child {
-    font-size: 8px !important;
-    letter-spacing: 1px !important;
+    font-size: 10px !important;
+    letter-spacing: 1.5px !important;
     white-space: nowrap;
   }
 

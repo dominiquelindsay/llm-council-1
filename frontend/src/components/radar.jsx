@@ -10,7 +10,7 @@ const formatDate = (date) => {
   return `${yyyy}-${mm}-${dd} ${hh}:${min}`;
 };
 
-const Radar = () => {
+const Radar = ({ onClose }) => {
   const { councilConfig, globalRoster, toggleTierMember, updateTierChairman, toggleQuarantine, purgeTierData } = useCouncil();
   const [providers, setProviders] = useState({});
   const [isLoading, setIsLoading] = useState(true);
@@ -267,7 +267,41 @@ const Radar = () => {
         </div>
       )}
       
-      <div className="radar-header-block" style={{ padding: '40px 60px 20px', textAlign: 'center' }}>
+      <div className="radar-header-block" style={{ padding: '40px 60px 20px', textAlign: 'center', position: 'relative' }}>
+        <button 
+          className="mobile-close-radar-btn" 
+          onClick={onClose}
+          style={{
+            position: 'absolute',
+            top: '20px',
+            right: '20px',
+            background: 'transparent',
+            border: '1px solid #ff3e3e66',
+            color: '#ff3e3e',
+            padding: '8px 16px',
+            fontSize: '10px',
+            fontFamily: 'monospace',
+            letterSpacing: '1px',
+            cursor: 'pointer',
+            borderRadius: '4px',
+            transition: 'all 0.2s',
+            fontWeight: 'bold',
+            boxShadow: '0 0 10px rgba(255, 62, 62, 0.1)',
+            display: 'none'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'rgba(255, 62, 62, 0.15)';
+            e.currentTarget.style.borderColor = '#ff3e3e';
+            e.currentTarget.style.boxShadow = '0 0 15px rgba(255, 62, 62, 0.3)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'transparent';
+            e.currentTarget.style.borderColor = '#ff3e3e66';
+            e.currentTarget.style.boxShadow = '0 0 10px rgba(255, 62, 62, 0.1)';
+          }}
+        >
+          [ X ] // CLOSE_RADAR
+        </button>
         <div style={{ color: '#00ff41', fontSize: '12px', letterSpacing: '8px', marginBottom: '10px', opacity: 0.6 }}>SYSTEM_STATUS: OMNISCIENT</div>
         <div className="radar-title" style={{ color: '#fff', fontSize: '28px', fontWeight: '900', letterSpacing: '12px', textShadow: '0 0 20px rgba(255,255,255,0.2)' }}>COUNCIL_RADAR_V11.0</div>
         {lastSync && (

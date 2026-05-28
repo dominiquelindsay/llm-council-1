@@ -360,7 +360,7 @@ function App() {
   const displayLoading = activeStream ? activeStream.isThinking : isFetching;
 
   return (
-    <div className={`app ${mobileSidebarOpen ? 'sidebar-open' : ''} ${!currentConversationId ? 'app-in-splash' : ''}`} style={{ '--sidebar-width': `${sidebarWidth}px` }}>
+    <div className={`app ${mobileSidebarOpen ? 'sidebar-open' : ''} ${!currentConversationId ? 'app-in-splash' : ''} ${showRadar ? 'radar-active' : ''}`} style={{ '--sidebar-width': `${sidebarWidth}px` }}>
       {/* MOBILE DRAWER BACKDROP OVERLAY */}
       <div 
         className={`sidebar-overlay ${mobileSidebarOpen ? 'open' : ''}`} 

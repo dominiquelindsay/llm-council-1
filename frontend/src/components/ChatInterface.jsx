@@ -401,7 +401,7 @@ const ChatInterface = ({ conversation, onSendMessage, onClearHistory, isLoading,
       </div>
 
       <div style={{ flex: 1, position: 'relative', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-        {showRadar && <Radar />}
+        {showRadar && <Radar onClose={() => setShowRadar(false)} />}
         {isSplash ? <Splash key={splashKey} onOpenMobileSidebar={onOpenMobileSidebar} /> : isUplinkEstablished ? (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
             
