@@ -43,8 +43,21 @@ const Radar = () => {
           
           const displayLabel = p === "qwen" ? "QWEN_VL" : p.toUpperCase();
           
-          grouped[displayLabel] = providerModels.slice(0, 5).map(m => ({
-            name: m.name.toUpperCase(),
+          const finalModels = providerModels.slice(0, 5);
+          
+          // Ensure all active models in globalRoster for this provider are always visible so they don't cause "phantom seats"!
+          if (Array.isArray(globalRoster)) {
+            globalRoster.forEach(gr => {
+              if (gr.modelId.startsWith(p + '/') && (gr.tier || gr.isArbiter || gr.isQuarantined)) {
+                if (!finalModels.some(m => m.id === gr.modelId)) {
+                  finalModels.push({ id: gr.modelId, name: gr.name });
+                }
+              }
+            });
+          }
+
+          grouped[displayLabel] = finalModels.map(m => ({
+            name: (m.name || m.id.split('/').pop()).toUpperCase(),
             slug: m.id
           }));
         });
