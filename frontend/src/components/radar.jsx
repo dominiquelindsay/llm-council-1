@@ -262,21 +262,21 @@ const Radar = ({ onClose }) => {
     }
     .radar-close-btn {
       position: fixed;
-      top: 80px;
+      top: 12px;
       right: 30px;
-      background: rgba(2, 2, 6, 0.95);
+      background: #0e1217;
       backdrop-filter: blur(5px);
       border: 1px solid #ff3e3e88;
       color: #ff3e3e;
-      padding: 10px 20px;
+      padding: 8px 16px;
       font-size: 11px;
       font-family: monospace;
       letter-spacing: 2px;
       cursor: pointer;
-      border-radius: 30px;
+      border-radius: 4px;
       transition: all 0.2s;
       font-weight: bold;
-      z-index: 10001;
+      z-index: 10002;
       box-shadow: 0 0 15px rgba(255, 62, 62, 0.2);
     }
     .radar-close-btn:hover {
@@ -326,12 +326,12 @@ const Radar = ({ onClose }) => {
     }
     @media (max-width: 768px) {
       .radar-close-btn {
-        top: 80px !important;
+        top: 12px !important;
         right: 15px !important;
         font-size: 9px !important;
-        padding: 8px 16px !important;
+        padding: 6px 12px !important;
         letter-spacing: 1px !important;
-        background: rgba(2, 2, 6, 0.95) !important;
+        background: #0e1217 !important;
         box-shadow: 0 0 15px rgba(255, 62, 62, 0.35) !important;
       }
       .radar-control-grid {
@@ -433,12 +433,12 @@ const Radar = ({ onClose }) => {
         </div>
 
         {/* CAPACITY NODE MATRIX */}
-        <div style={{ marginTop: '20px', height: '40px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ marginTop: '20px', height: '40px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
           {(activeFilter === 'ALL' || activeFilter === 'ARBITER' || activeFilter === 'QUARANTINE') ? (
-            <div style={{ color: '#00f2ff', fontSize: '12px', letterSpacing: '4px', opacity: 0.6, fontWeight: 'bold' }}>[ GLOBAL_VIEW ]</div>
+            <div style={{ color: '#00f2ff', fontSize: '12px', letterSpacing: '4px', opacity: 0.6, fontWeight: 'bold', textAlign: 'center', width: '100%' }}>[ GLOBAL_VIEW ]</div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-              <div style={{ color: '#bc13fe', fontSize: '10px', letterSpacing: '3px', fontWeight: 'bold' }}>[ SEAT_ALLOCATION ]</div>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', width: '100%', textAlign: 'center' }}>
+              <div style={{ color: '#bc13fe', fontSize: '10px', letterSpacing: '3px', fontWeight: 'bold', textAlign: 'center', width: '100%' }}>[ SEAT_ALLOCATION ]</div>
               <div style={{ display: 'flex', gap: '12px' }}>
                 {[...Array(5)].map((_, i) => {
                   const activeTier = activeFilter.toLowerCase();

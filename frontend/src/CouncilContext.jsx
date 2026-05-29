@@ -80,19 +80,39 @@ export const CouncilProvider = ({ children }) => {
     const processedModelIds = new Set();
 
     if (Array.isArray(parsedMemory) && parsedMemory.length > 0) {
+      const groupedMemory = {};
       parsedMemory.forEach(item => {
         if (item && item.modelId) {
+          if (!groupedMemory[item.modelId]) {
+            groupedMemory[item.modelId] = {
+              modelId: item.modelId,
+              name: item.name,
+              tiers: [],
+              isQuarantined: false,
+              isArbiter: false
+            };
+          }
           const itemTiers = item.tiers || (item.tier ? [item.tier] : []);
-          initialRoster.push({
-            modelId: item.modelId,
-            name: item.name || item.modelId.split('/').pop().replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
-            tier: item.tier || itemTiers[0] || null,
-            tiers: itemTiers,
-            isQuarantined: !!item.isQuarantined,
-            isArbiter: !!item.isArbiter
+          itemTiers.forEach(t => {
+            if (!groupedMemory[item.modelId].tiers.includes(t)) {
+              groupedMemory[item.modelId].tiers.push(t);
+            }
           });
-          processedModelIds.add(item.modelId);
+          if (item.isQuarantined) groupedMemory[item.modelId].isQuarantined = true;
+          if (item.isArbiter) groupedMemory[item.modelId].isArbiter = true;
         }
+      });
+
+      Object.values(groupedMemory).forEach(item => {
+        initialRoster.push({
+          modelId: item.modelId,
+          name: item.name || item.modelId.split('/').pop().replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+          tier: item.tiers[0] || null,
+          tiers: item.tiers,
+          isQuarantined: !!item.isQuarantined,
+          isArbiter: !!item.isArbiter
+        });
+        processedModelIds.add(item.modelId);
       });
     }
 
@@ -237,17 +257,24 @@ export const CouncilProvider = ({ children }) => {
           const modelId = m.id;
           const name = m.name;
 
-          // A. If exists in history, apply saved modifications
-          const memMatch = parsedMemory.find(item => item.modelId === modelId);
-          if (memMatch) {
-            const itemTiers = memMatch.tiers || (memMatch.tier ? [memMatch.tier] : []);
+          // A. If exists in history, apply saved modifications (aggregate all duplicates)
+          const memMatches = parsedMemory.filter(item => item.modelId === modelId);
+          if (memMatches.length > 0) {
+            const itemTiers = [];
+            memMatches.forEach(mm => {
+              const tiers = mm.tiers || (mm.tier ? [mm.tier] : []);
+              tiers.forEach(t => {
+                if (!itemTiers.includes(t)) itemTiers.push(t);
+              });
+            });
+            const firstMatch = memMatches[0];
             return {
               modelId,
               name,
-              tier: memMatch.tier || itemTiers[0] || null,
+              tier: firstMatch.tier || itemTiers[0] || null,
               tiers: itemTiers,
-              isQuarantined: !!memMatch.isQuarantined,
-              isArbiter: !!memMatch.isArbiter
+              isQuarantined: memMatches.some(mm => mm.isQuarantined),
+              isArbiter: memMatches.some(mm => mm.isArbiter)
             };
           }
 
