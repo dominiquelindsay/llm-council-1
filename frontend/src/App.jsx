@@ -10,6 +10,7 @@ function App() {
   const [conversations, setConversations] = useState([]);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [showRadar, setShowRadar] = useState(false);
+  const [visualEngine, setVisualEngine] = useState('dall-e-3');
   
   const [sidebarWidth, setSidebarWidth] = useState(() => {
     const saved = localStorage.getItem('sidebar_width');
@@ -404,6 +405,9 @@ function App() {
         }}
         isRadarActive={showRadar}
         onExportDossier={handleExportDossier}
+        visualEngine={visualEngine}
+        setVisualEngine={setVisualEngine}
+        onClearHistory={() => currentConversationId && handleClearHistory(currentConversationId)}
       />
       
       {/* DRAGGABLE SCI-FI DIVIDER */}
@@ -440,6 +444,8 @@ function App() {
         onOpenMobileSidebar={() => setMobileSidebarOpen(true)}
         showRadar={showRadar}
         setShowRadar={setShowRadar}
+        visualEngine={visualEngine}
+        setVisualEngine={setVisualEngine}
       />
     </div>
   );

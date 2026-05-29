@@ -238,10 +238,9 @@ const CinematicStage = ({ title, data, color }) => {
   );
 };
 
-const ChatInterface = ({ conversation, onSendMessage, onClearHistory, isLoading, splashKey, onOpenMobileSidebar, showRadar, setShowRadar }) => {
+const ChatInterface = ({ conversation, onSendMessage, onClearHistory, isLoading, splashKey, onOpenMobileSidebar, showRadar, setShowRadar, visualEngine, setVisualEngine }) => {
   const [inputValue, setInputValue] = useState('');
   const [intelligenceTier, setIntelligenceTier] = useState('pro');
-  const [visualEngine, setVisualEngine] = useState('dall-e-3'); 
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [stagedFiles, setStagedFiles] = useState([]);
   const [isDragging, setIsDragging] = useState(false); 
@@ -362,42 +361,8 @@ const ChatInterface = ({ conversation, onSendMessage, onClearHistory, isLoading,
         `}
       </style>
 
-      <div className="chat-header-bar" style={{ background: '#0e1217', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 30px', borderBottom: '1px solid #1c1c22', zIndex: 100 }}>
-        <div style={{ color: '#00f2ff', letterSpacing: '3px', fontSize: '11px', fontWeight: 'bold' }}>COMMAND_MODULE // V11.0 ARBITER</div>
-        <div style={{ display: 'flex', gap: '12px', position: 'relative' }}>
-          <HudButton label={showRadar ? "CLOSE_RADAR" : "SYSTEM_RADAR"} onClick={() => setShowRadar(!showRadar)} color={showRadar ? "#ff3e3e" : "#00f2ff"} />
-          
-          <div onMouseEnter={() => setShowExportMenu(true)} onMouseLeave={() => setShowExportMenu(false)} style={{ position: 'relative' }}>
-            <HudButton label="EXPORT_DOSSIER" isActive={showExportMenu} />
-            {showExportMenu && (
-              <div style={{ position: 'absolute', top: '100%', left: 0, minWidth: '150px', paddingTop: '8px', zIndex: 200 }}>
-                <div style={{ background: '#0e1217', border: '1px solid #00f2ff44', borderRadius: '4px', display: 'flex', flexDirection: 'column', boxShadow: '0 5px 15px rgba(0,0,0,0.5)', overflow: 'hidden' }}>
-                  {/* V12.1: Email Restored to the Array */}
-                  {['pdf', 'docx', 'txt', 'email'].map(fmt => (
-                    <button 
-                      key={fmt} 
-                      onClick={() => triggerExport(fmt)} 
-                      onMouseEnter={(e) => e.target.style.background = '#00f2ff22'}
-                      onMouseLeave={(e) => e.target.style.background = 'transparent'}
-                      style={{ background: 'transparent', color: '#00f2ff', border: 'none', padding: '12px 15px', fontSize: '10px', cursor: 'pointer', textAlign: 'left', borderBottom: '1px solid #1c1c22', transition: 'background 0.2s', fontWeight: 'bold' }}
-                    >
-                      &gt; {fmt === 'email' ? 'EMAIL_DOSSIER' : `DOWNLOAD_.${fmt.toUpperCase()}`}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-          
-          <HudButton 
-            label={visualEngine === 'dall-e-3' ? "ENGINE: DALL-E-3" : "ENGINE: OFF"} 
-            onClick={() => setVisualEngine(prev => prev === 'dall-e-3' ? 'none' : 'dall-e-3')} 
-            color="#b000ff" 
-          />
-
-          <HudButton label="PRINT_DOSSIER" onClick={() => window.print()} />
-          <HudButton label="PURGE_RESPONSE" color="#ff3e3e" onClick={() => onClearHistory && onClearHistory(conversation?.id)} />
-        </div>
+      <div className="chat-header-bar">
+        <div className="chat-header-title">COMMAND_MODULE // V11.0 ARBITER</div>
       </div>
 
       <div style={{ flex: 1, position: 'relative', display: 'flex', flexDirection: 'column', minHeight: 0 }}>

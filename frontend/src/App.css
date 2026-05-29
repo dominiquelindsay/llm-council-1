@@ -63,6 +63,28 @@
 /* 4. CHAT INTERFACE & INPUT STYLING */
 .chat-interface { flex: 1; display: flex; flex-direction: column; background: #000000; position: relative; min-width: 0; /* Protects flex layout */ }
 
+.chat-header-bar {
+  background: #0e1217;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 30px;
+  border-bottom: 1px solid #1c1c22;
+  z-index: 100;
+}
+
+.chat-header-title {
+  color: #00f2ff;
+  letter-spacing: 12px;
+  font-size: 13px;
+  font-weight: bold;
+  text-transform: uppercase;
+  text-align: center;
+  text-shadow: 0 0 10px rgba(0, 242, 255, 0.3);
+  transition: all 0.3s ease;
+}
+
 /* --- THE NEW VAULT ACTUATION (IRIS OPEN) --- */
 .messages-area { 
   flex: 1; 
@@ -196,9 +218,9 @@
 .new-session-btn {
   width: 100% !important;
   background: #050508 !important;
-  border: 1px solid rgba(0, 242, 255, 0.3) !important;
-  border-left: 3px solid #00f2ff !important;
-  color: #00f2ff !important;
+  border: 1px solid rgba(255, 176, 0, 0.3) !important;
+  border-left: 3px solid #ffb000 !important;
+  color: #ffb000 !important;
   padding: 12px clamp(8px, calc(var(--sidebar-width) * 0.03), 16px) !important;
   font-family: monospace !important;
   font-weight: 900 !important;
@@ -219,11 +241,11 @@
 }
 
 .new-session-btn:hover {
-  background: rgba(0, 242, 255, 0.15) !important;
-  border-color: #00f2ff !important;
+  background: rgba(255, 176, 0, 0.15) !important;
+  border-color: #ffb000 !important;
   color: #ffffff !important;
-  box-shadow: 0 0 15px rgba(0, 242, 255, 0.3) !important;
-  text-shadow: 0 0 8px #00f2ff !important;
+  box-shadow: 0 0 15px rgba(255, 176, 0, 0.4) !important;
+  text-shadow: 0 0 8px #ffb000 !important;
 }
 
 
@@ -507,27 +529,19 @@
   }
   
   /* Prevent horizontal stretch by hiding other header buttons but keeping the first (Radar) */
-  .chat-header-bar > div:last-child {
-    display: flex !important;
-    gap: 8px !important;
-  }
-  .chat-header-bar > div:last-child > *:not(:first-child) {
-    display: none !important;
-  }
-  
   /* Centered and padded header for mobile layout */
   .chat-header-bar {
     padding: 0 15px !important;
-    justify-content: space-between !important;
+    justify-content: center !important;
     background: #0e1217 !important;
     border-bottom: 1px solid #00f2ff22 !important;
   }
   
-  /* Make header text slightly smaller to fit perfectly */
-  .chat-header-bar > div:first-child {
+  .chat-header-title {
     font-size: 10px !important;
     letter-spacing: 1.5px !important;
-    white-space: nowrap;
+    white-space: nowrap !important;
+    text-shadow: none !important;
   }
 
   /* ==========================================================================

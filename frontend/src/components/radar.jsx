@@ -260,6 +260,37 @@ const Radar = ({ onClose }) => {
       border-color: #ff003c;
       box-shadow: 0 0 10px rgba(255, 0, 60, 0.3);
     }
+    .radar-close-btn {
+      position: absolute;
+      top: 20px;
+      right: 30px;
+      background: transparent;
+      border: 1px solid #ff3e3e88;
+      color: #ff3e3e;
+      padding: 8px 16px;
+      font-size: 11px;
+      font-family: monospace;
+      letter-spacing: 1px;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: all 0.2s;
+      font-weight: bold;
+      z-index: 1001;
+      box-shadow: 0 0 10px rgba(255, 62, 62, 0.1);
+    }
+    .radar-close-btn:hover {
+      background: rgba(255, 62, 62, 0.15);
+      border-color: #ff3e3e;
+      box-shadow: 0 0 15px rgba(255, 62, 62, 0.3);
+    }
+    @media (max-width: 768px) {
+      .radar-close-btn {
+        top: 15px !important;
+        right: 15px !important;
+        font-size: 9px !important;
+        padding: 6px 12px !important;
+      }
+    }
   `;
 
   if (isLoading) return (
@@ -279,6 +310,13 @@ const Radar = ({ onClose }) => {
       )}
       
       <div className="radar-header-block" style={{ padding: '40px 60px 20px', textAlign: 'center', position: 'relative' }}>
+        <button 
+          type="button" 
+          onClick={onClose} 
+          className="radar-close-btn"
+        >
+          [ X ] // CLOSE_RADAR
+        </button>
         <div className="radar-status-text" style={{ color: '#00ff41', fontSize: '12px', letterSpacing: '8px', marginBottom: '10px', opacity: 0.6 }}>SYSTEM_STATUS: OMNISCIENT</div>
         <div className="radar-title" style={{ color: '#fff', fontSize: '28px', fontWeight: '900', letterSpacing: '12px', textShadow: '0 0 20px rgba(255,255,255,0.2)' }}>COUNCIL_RADAR_V11.0</div>
         {lastSync && (

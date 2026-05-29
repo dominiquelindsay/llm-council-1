@@ -16,7 +16,10 @@ const Sidebar = ({
   onCloseMobile,
   onToggleRadar,
   isRadarActive,
-  onExportDossier
+  onExportDossier,
+  visualEngine,
+  setVisualEngine,
+  onClearHistory
 }) => {
   const [showSidebarExport, setShowSidebarExport] = useState(false);
   const [isLogoHovered, setIsLogoHovered] = useState(false);
@@ -175,72 +178,172 @@ const Sidebar = ({
         </div>
 
         {/* SCI-FI CONTROL TABS UNDER LOGO */}
-        <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginBottom: '25px', flexWrap: 'wrap' }}>
-          <button 
-            type="button"
-            onClick={onToggleRadar}
-            style={{
-              background: isRadarActive ? 'rgba(0, 242, 255, 0.15)' : '#050508',
-              color: '#00f2ff',
-              border: `1px solid ${isRadarActive ? '#00f2ff' : 'rgba(0, 242, 255, 0.3)'}`,
-              padding: '10px 15px',
-              fontSize: '10px',
-              fontWeight: 'bold',
-              fontFamily: 'monospace',
-              letterSpacing: '1.5px',
-              cursor: 'pointer',
-              borderRadius: '3px',
-              transition: 'all 0.2s',
-              boxShadow: isRadarActive ? '0 0 12px rgba(0, 242, 255, 0.3)' : 'none',
-              outline: 'none'
-            }}
-          >
-            {isRadarActive ? "[ CLOSE_RADAR ]" : "[ SYSTEM_RADAR ]"}
-          </button>
-
-          <div style={{ position: 'relative' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', padding: '0 clamp(4px, calc(var(--sidebar-width) * 0.04), 16px)', marginBottom: '25px' }}>
+          {/* Row 1: Radar & Export */}
+          <div style={{ display: 'flex', gap: '8px' }}>
             <button 
               type="button"
-              onClick={() => setShowSidebarExport(!showSidebarExport)}
+              onClick={onToggleRadar}
               style={{
-                background: showSidebarExport ? 'rgba(0, 242, 255, 0.15)' : '#050508',
+                flex: 1,
+                background: isRadarActive ? 'rgba(0, 242, 255, 0.15)' : '#050508',
                 color: '#00f2ff',
-                border: `1px solid ${showSidebarExport ? '#00f2ff' : 'rgba(0, 242, 255, 0.3)'}`,
-                padding: '10px 15px',
-                fontSize: '10px',
+                border: `1px solid ${isRadarActive ? '#00f2ff' : 'rgba(0, 242, 255, 0.3)'}`,
+                padding: '10px 4px',
+                fontSize: '9px',
+                fontWeight: 'bold',
+                fontFamily: 'monospace',
+                letterSpacing: '1px',
+                cursor: 'pointer',
+                borderRadius: '3px',
+                transition: 'all 0.2s',
+                boxShadow: isRadarActive ? '0 0 12px rgba(0, 242, 255, 0.3)' : 'none',
+                outline: 'none',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              {isRadarActive ? "[ CLOSE_RADAR ]" : "[ SYSTEM_RADAR ]"}
+            </button>
+
+            <div style={{ flex: 1, position: 'relative' }}>
+              <button 
+                type="button"
+                onClick={() => setShowSidebarExport(!showSidebarExport)}
+                style={{
+                  width: '100%',
+                  background: showSidebarExport ? 'rgba(0, 242, 255, 0.15)' : '#050508',
+                  color: '#00f2ff',
+                  border: `1px solid ${showSidebarExport ? '#00f2ff' : 'rgba(0, 242, 255, 0.3)'}`,
+                  padding: '10px 4px',
+                  fontSize: '9px',
+                  fontWeight: 'bold',
+                  fontFamily: 'monospace',
+                  letterSpacing: '1px',
+                  cursor: 'pointer',
+                  borderRadius: '3px',
+                  transition: 'all 0.2s',
+                  boxShadow: showSidebarExport ? '0 0 12px rgba(0, 242, 255, 0.3)' : 'none',
+                  outline: 'none',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                [ EXPORT_DOSSIER ]
+              </button>
+              {showSidebarExport && (
+                <div style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', width: '180px', paddingTop: '8px', zIndex: 300 }}>
+                  <div style={{ background: '#0e1217', border: '1px solid #00f2ff44', borderRadius: '4px', display: 'flex', flexDirection: 'column', boxShadow: '0 5px 25px rgba(0,0,0,0.6)', overflow: 'hidden' }}>
+                    {['pdf', 'docx', 'txt', 'email'].map(fmt => (
+                      <button 
+                        key={fmt} 
+                        onClick={() => {
+                          onExportDossier(fmt);
+                          setShowSidebarExport(false);
+                        }} 
+                        style={{ background: 'transparent', color: '#00f2ff', border: 'none', padding: '10px 15px', fontSize: '9px', cursor: 'pointer', textAlign: 'left', borderBottom: '1px solid #1c1c22', transition: 'background 0.2s', fontWeight: 'bold', fontFamily: 'monospace' }}
+                        onMouseEnter={(e) => e.target.style.background = '#00f2ff22'}
+                        onMouseLeave={(e) => e.target.style.background = 'transparent'}
+                      >
+                        &gt; {fmt === 'email' ? 'EMAIL_DOSSIER' : `DOWNLOAD_.${fmt.toUpperCase()}`}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Row 2: Engine & Print */}
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button 
+              type="button"
+              onClick={() => setVisualEngine(prev => prev === 'dall-e-3' ? 'none' : 'dall-e-3')}
+              style={{
+                flex: 1,
+                background: visualEngine === 'dall-e-3' ? 'rgba(176, 0, 255, 0.12)' : '#050508',
+                color: '#b000ff',
+                border: `1px solid ${visualEngine === 'dall-e-3' ? '#b000ff' : 'rgba(176, 0, 255, 0.3)'}`,
+                padding: '10px 4px',
+                fontSize: '9px',
+                fontWeight: 'bold',
+                fontFamily: 'monospace',
+                letterSpacing: '1px',
+                cursor: 'pointer',
+                borderRadius: '3px',
+                transition: 'all 0.2s',
+                boxShadow: visualEngine === 'dall-e-3' ? '0 0 10px rgba(176, 0, 255, 0.3)' : 'none',
+                outline: 'none',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              {visualEngine === 'dall-e-3' ? "[ ENGINE: ON ]" : "[ ENGINE: OFF ]"}
+            </button>
+
+            <button 
+              type="button"
+              onClick={() => window.print()}
+              style={{
+                flex: 1,
+                background: '#050508',
+                color: '#00f2ff',
+                border: '1px solid rgba(0, 242, 255, 0.3)',
+                padding: '10px 4px',
+                fontSize: '9px',
+                fontWeight: 'bold',
+                fontFamily: 'monospace',
+                letterSpacing: '1px',
+                cursor: 'pointer',
+                borderRadius: '3px',
+                transition: 'all 0.2s',
+                outline: 'none',
+                whiteSpace: 'nowrap'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.background = 'rgba(0, 242, 255, 0.1)';
+                e.target.style.borderColor = '#00f2ff';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.background = '#050508';
+                e.target.style.borderColor = 'rgba(0, 242, 255, 0.3)';
+              }}
+            >
+              [ PRINT_DOSSIER ]
+            </button>
+          </div>
+
+          {/* Row 3: Purge Response (only active sessions) */}
+          {currentConversationId && currentConversationId !== 'new' && (
+            <button 
+              type="button"
+              onClick={onClearHistory}
+              style={{
+                width: '100%',
+                background: '#050508',
+                color: '#ff3e3e',
+                border: '1px solid rgba(255, 62, 62, 0.3)',
+                padding: '10px 4px',
+                fontSize: '9px',
                 fontWeight: 'bold',
                 fontFamily: 'monospace',
                 letterSpacing: '1.5px',
                 cursor: 'pointer',
                 borderRadius: '3px',
                 transition: 'all 0.2s',
-                boxShadow: showSidebarExport ? '0 0 12px rgba(0, 242, 255, 0.3)' : 'none',
                 outline: 'none'
               }}
+              onMouseEnter={(e) => {
+                e.target.style.background = 'rgba(255, 62, 62, 0.1)';
+                e.target.style.borderColor = '#ff3e3e';
+                e.target.style.boxShadow = '0 0 10px rgba(255, 62, 62, 0.2)';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.background = '#050508';
+                e.target.style.borderColor = 'rgba(255, 62, 62, 0.3)';
+                e.target.style.boxShadow = 'none';
+              }}
             >
-              [ EXPORT_DOSSIER ]
+              [ PURGE_RESPONSE ]
             </button>
-            {showSidebarExport && (
-              <div style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', width: '180px', paddingTop: '8px', zIndex: 300 }}>
-                <div style={{ background: '#0e1217', border: '1px solid #00f2ff44', borderRadius: '4px', display: 'flex', flexDirection: 'column', boxShadow: '0 5px 25px rgba(0,0,0,0.6)', overflow: 'hidden' }}>
-                  {['pdf', 'docx', 'txt', 'email'].map(fmt => (
-                    <button 
-                      key={fmt} 
-                      onClick={() => {
-                        onExportDossier(fmt);
-                        setShowSidebarExport(false);
-                      }} 
-                      style={{ background: 'transparent', color: '#00f2ff', border: 'none', padding: '10px 15px', fontSize: '9px', cursor: 'pointer', textAlign: 'left', borderBottom: '1px solid #1c1c22', transition: 'background 0.2s', fontWeight: 'bold', fontFamily: 'monospace' }}
-                      onMouseEnter={(e) => e.target.style.background = '#00f2ff22'}
-                      onMouseLeave={(e) => e.target.style.background = 'transparent'}
-                    >
-                      &gt; {fmt === 'email' ? 'EMAIL_DOSSIER' : `DOWNLOAD_.${fmt.toUpperCase()}`}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
+          )}
         </div>
         
         <button 
@@ -248,7 +351,7 @@ const Sidebar = ({
           className="new-session-btn"
         >
           <span style={{ fontSize: '1.25em' }}>&gt;</span> INITIATE_NEW_SESSION
-          <div style={{ width: '10px', height: '10px', background: '#00f2ff', boxShadow: '0 0 10px #00f2ff' }} />
+          <div style={{ width: '10px', height: '10px', background: '#ffb000', boxShadow: '0 0 10px #ffb000' }} />
         </button>
 
         {/* HUD SEARCH BOX */}
