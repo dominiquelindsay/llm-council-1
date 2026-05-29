@@ -261,34 +261,92 @@ const Radar = ({ onClose }) => {
       box-shadow: 0 0 10px rgba(255, 0, 60, 0.3);
     }
     .radar-close-btn {
-      position: absolute;
-      top: 20px;
+      position: fixed;
+      top: 80px;
       right: 30px;
-      background: transparent;
+      background: rgba(2, 2, 6, 0.95);
+      backdrop-filter: blur(5px);
       border: 1px solid #ff3e3e88;
       color: #ff3e3e;
-      padding: 8px 16px;
+      padding: 10px 20px;
       font-size: 11px;
       font-family: monospace;
-      letter-spacing: 1px;
+      letter-spacing: 2px;
       cursor: pointer;
-      border-radius: 4px;
+      border-radius: 30px;
       transition: all 0.2s;
       font-weight: bold;
-      z-index: 1001;
-      box-shadow: 0 0 10px rgba(255, 62, 62, 0.1);
+      z-index: 10001;
+      box-shadow: 0 0 15px rgba(255, 62, 62, 0.2);
     }
     .radar-close-btn:hover {
       background: rgba(255, 62, 62, 0.15);
       border-color: #ff3e3e;
-      box-shadow: 0 0 15px rgba(255, 62, 62, 0.3);
+      box-shadow: 0 0 20px rgba(255, 62, 62, 0.4);
+    }
+    .radar-control-grid {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-top: 30px;
+      max-width: 1200px;
+      margin-left: auto;
+      margin-right: auto;
+      padding: 0 20px;
+    }
+    .radar-control-tile {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      background: rgba(5, 5, 8, 0.95);
+      border: 1px solid #1c1c22;
+      border-radius: 4px;
+      padding: 12px 15px;
+      min-width: 140px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+      transition: all 0.25s ease;
+      box-sizing: border-box;
+    }
+    .radar-control-tile.active-tile {
+      border-color: #bc13fe;
+      background: rgba(188, 19, 254, 0.08);
+      box-shadow: 0 0 15px rgba(188, 19, 254, 0.2);
+    }
+    .radar-control-tile.quarantine-tile.active-tile {
+      border-color: #ff3e3e;
+      background: rgba(255, 62, 62, 0.08);
+      box-shadow: 0 0 15px rgba(255, 62, 62, 0.2);
+    }
+    .radar-control-tile:hover {
+      border-color: rgba(0, 242, 255, 0.5);
+      box-shadow: 0 0 10px rgba(0, 242, 255, 0.15);
+      transform: translateY(-1px);
     }
     @media (max-width: 768px) {
       .radar-close-btn {
-        top: 15px !important;
+        top: 80px !important;
         right: 15px !important;
         font-size: 9px !important;
-        padding: 6px 12px !important;
+        padding: 8px 16px !important;
+        letter-spacing: 1px !important;
+        background: rgba(2, 2, 6, 0.95) !important;
+        box-shadow: 0 0 15px rgba(255, 62, 62, 0.35) !important;
+      }
+      .radar-control-grid {
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 10px !important;
+        padding: 0 10px !important;
+      }
+      .radar-control-tile {
+        min-width: 0 !important;
+        padding: 8px !important;
+        gap: 6px !important;
+      }
+      .radar-control-tile:first-child {
+        grid-column: span 2 !important;
       }
     }
   `;
@@ -303,6 +361,14 @@ const Radar = ({ onClose }) => {
     <div className="radar-container" style={{ position: 'fixed', top: '60px', left: 'var(--sidebar-width, 340px)', right: 0, bottom: 0, zIndex: 1000, overflowY: 'auto', backdropFilter: 'blur(10px)', animation: 'flashlight-pulse 8s infinite ease-in-out', paddingBottom: '100px' }}>
       <style>{customStyles}</style>
 
+      <button 
+        type="button" 
+        onClick={onClose} 
+        className="radar-close-btn"
+      >
+        [ X ] // CLOSE_RADAR
+      </button>
+
       {toast && (
         <div className="toast-notification">
           [ COMMAND ] {toast}
@@ -310,13 +376,6 @@ const Radar = ({ onClose }) => {
       )}
       
       <div className="radar-header-block" style={{ padding: '40px 60px 20px', textAlign: 'center', position: 'relative' }}>
-        <button 
-          type="button" 
-          onClick={onClose} 
-          className="radar-close-btn"
-        >
-          [ X ] // CLOSE_RADAR
-        </button>
         <div className="radar-status-text" style={{ color: '#00ff41', fontSize: '12px', letterSpacing: '8px', marginBottom: '10px', opacity: 0.6 }}>SYSTEM_STATUS: OMNISCIENT</div>
         <div className="radar-title" style={{ color: '#fff', fontSize: '28px', fontWeight: '900', letterSpacing: '12px', textShadow: '0 0 20px rgba(255,255,255,0.2)' }}>COUNCIL_RADAR_V11.0</div>
         {lastSync && (
@@ -326,43 +385,51 @@ const Radar = ({ onClose }) => {
         )}
         
         {/* TIER CONTROL PANEL (FILTER HUD + PURGE GRID) */}
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', flexWrap: 'wrap', marginTop: '30px' }}>
-          {['ALL', 'FAST', 'PRO', 'OMEGA', 'GOD', 'ARBITER', 'QUARANTINE'].map(f => (
-            <div key={f} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
-              <button 
-                onClick={() => setActiveFilter(f)}
-                style={{
-                  background: activeFilter === f ? (f === 'QUARANTINE' ? 'rgba(255, 62, 62, 0.2)' : 'rgba(188, 19, 254, 0.2)') : 'transparent',
-                  color: activeFilter === f ? '#fff' : (f === 'QUARANTINE' ? '#ff3e3e' : '#00f2ff'),
-                  border: `1px solid ${activeFilter === f ? (f === 'QUARANTINE' ? '#ff3e3e' : '#bc13fe') : (f === 'QUARANTINE' ? '#ff3e3e44' : '#00f2ff44')}`,
-                  padding: '8px 20px',
-                  fontSize: '12px',
-                  fontWeight: 'bold',
-                  letterSpacing: '3px',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  boxShadow: activeFilter === f ? (f === 'QUARANTINE' ? '0 0 15px rgba(255, 62, 62, 0.4)' : '0 0 15px rgba(188, 19, 254, 0.4)') : 'none',
-                  whiteSpace: 'nowrap'
-                }}
-              >
-                [ {f} ]
-              </button>
-              <button
-                className="purge-btn"
-                onClick={() => {
-                  if (isMobile) {
-                    setToast("TACTICAL LOCK: Visit operations_control_panel to purge.");
-                    setTimeout(() => setToast(null), 3500);
-                    return;
-                  }
-                  setPurgeTarget(f);
-                }}
-                style={{ whiteSpace: 'nowrap' }}
-              >
-                [ PURGE {f} ]
-              </button>
-            </div>
-          ))}
+        <div className="radar-control-grid">
+          {['ALL', 'FAST', 'PRO', 'OMEGA', 'GOD', 'ARBITER', 'QUARANTINE'].map(f => {
+            const isQuarantine = f === 'QUARANTINE';
+            const isFilterActive = activeFilter === f;
+            const tileClass = `radar-control-tile ${isQuarantine ? 'quarantine-tile' : ''} ${isFilterActive ? 'active-tile' : ''}`;
+            
+            return (
+              <div key={f} className={tileClass}>
+                <button 
+                  onClick={() => setActiveFilter(f)}
+                  style={{
+                    background: isFilterActive ? (isQuarantine ? 'rgba(255, 62, 62, 0.2)' : 'rgba(188, 19, 254, 0.2)') : 'transparent',
+                    color: isFilterActive ? '#fff' : (isQuarantine ? '#ff3e3e' : '#00f2ff'),
+                    border: `1px solid ${isFilterActive ? (isQuarantine ? '#ff3e3e' : '#bc13fe') : (isQuarantine ? '#ff3e3e44' : '#00f2ff44')}`,
+                    padding: '8px 16px',
+                    fontSize: '11px',
+                    fontWeight: 'bold',
+                    letterSpacing: '2px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    boxShadow: isFilterActive ? (isQuarantine ? '0 0 10px rgba(255, 62, 62, 0.3)' : '0 0 10px rgba(188, 19, 254, 0.3)') : 'none',
+                    whiteSpace: 'nowrap',
+                    width: '100%',
+                    borderRadius: '2px'
+                  }}
+                >
+                  [ {f} ]
+                </button>
+                <button
+                  className="purge-btn"
+                  onClick={() => {
+                    if (isMobile) {
+                      setToast("TACTICAL LOCK: Visit operations_control_panel to purge.");
+                      setTimeout(() => setToast(null), 3500);
+                      return;
+                    }
+                    setPurgeTarget(f);
+                  }}
+                  style={{ whiteSpace: 'nowrap', width: '100%', borderRadius: '2px', fontSize: '8px', padding: '4px 6px' }}
+                >
+                  [ PURGE {f} ]
+                </button>
+              </div>
+            );
+          })}
         </div>
 
         {/* CAPACITY NODE MATRIX */}
@@ -375,7 +442,7 @@ const Radar = ({ onClose }) => {
               <div style={{ display: 'flex', gap: '12px' }}>
                 {[...Array(5)].map((_, i) => {
                   const activeTier = activeFilter.toLowerCase();
-                  const currentTierCount = globalRoster.filter(item => item.tier === activeTier).length;
+                  const currentTierCount = globalRoster.filter(item => (item.tiers || (item.tier ? [item.tier] : [])).includes(activeTier)).length;
                   const isFilled = i < currentTierCount;
                   return (
                     <div key={i} style={{
@@ -442,12 +509,13 @@ const Radar = ({ onClose }) => {
               </div>
               {models.map(m => {
                 const rosterItem = globalRoster.find(item => item.modelId === m.slug);
-                const isActiveInAnyTier = !!(rosterItem && rosterItem.tier);
+                const itemTiers = rosterItem ? (rosterItem.tiers || (rosterItem.tier ? [rosterItem.tier] : [])) : [];
+                const isActiveInAnyTier = itemTiers.length > 0;
                 const isArbiterInAnyTier = !!(rosterItem && rosterItem.isArbiter);
                 const isQuarantined = !!(rosterItem && rosterItem.isQuarantined);
                 
                 const activeTier = activeFilter.toLowerCase();
-                const isAssignedToActiveTier = !!(rosterItem && rosterItem.tier === activeTier);
+                const isAssignedToActiveTier = itemTiers.includes(activeTier);
                 
                 const isCurrentlyActive = (activeFilter === 'ALL')
                   ? isActiveInAnyTier
@@ -510,7 +578,7 @@ const Radar = ({ onClose }) => {
 
                     <div className="tier-radio-group">
                       {TIERS.map(t => {
-                        const isActive = globalRoster.some(item => item.modelId === m.slug && item.tier === t);
+                        const isActive = globalRoster.some(item => item.modelId === m.slug && (item.tiers || (item.tier ? [item.tier] : [])).includes(t));
                         return (
                           <div 
                             key={t} 

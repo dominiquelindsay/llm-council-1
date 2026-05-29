@@ -82,10 +82,12 @@ export const CouncilProvider = ({ children }) => {
     if (Array.isArray(parsedMemory) && parsedMemory.length > 0) {
       parsedMemory.forEach(item => {
         if (item && item.modelId) {
+          const itemTiers = item.tiers || (item.tier ? [item.tier] : []);
           initialRoster.push({
             modelId: item.modelId,
             name: item.name || item.modelId.split('/').pop().replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
-            tier: item.tier || null,
+            tier: item.tier || itemTiers[0] || null,
+            tiers: itemTiers,
             isQuarantined: !!item.isQuarantined,
             isArbiter: !!item.isArbiter
           });
@@ -96,7 +98,16 @@ export const CouncilProvider = ({ children }) => {
 
     DEFAULT_ROSTER.forEach(def => {
       if (!processedModelIds.has(def.modelId)) {
-        initialRoster.push(def);
+        const defaultMatches = DEFAULT_ROSTER.filter(d => d.modelId === def.modelId);
+        const defaultTiers = defaultMatches.map(d => d.tier);
+        initialRoster.push({
+          modelId: def.modelId,
+          name: def.name,
+          tier: def.tier || defaultTiers[0] || null,
+          tiers: defaultTiers,
+          isQuarantined: !!def.isQuarantined,
+          isArbiter: !!def.isArbiter
+        });
         processedModelIds.add(def.modelId);
       }
     });
@@ -113,7 +124,13 @@ export const CouncilProvider = ({ children }) => {
   };
 
   globalRoster.forEach(item => {
-    if (item.tier && councilConfig[item.tier]) {
+    if (Array.isArray(item.tiers)) {
+      item.tiers.forEach(t => {
+        if (councilConfig[t]) {
+          councilConfig[t].council.push(item.modelId);
+        }
+      });
+    } else if (item.tier && councilConfig[item.tier]) {
       councilConfig[item.tier].council.push(item.modelId);
     }
     if (item.isArbiter) {
@@ -131,10 +148,11 @@ export const CouncilProvider = ({ children }) => {
 
   // 4. Save function: Stores only modified models under the single key 'council_memory'
   const saveRosterState = (roster) => {
-    const modified = roster.filter(item => item.tier || item.isQuarantined || item.isArbiter)
+    const modified = roster.filter(item => (item.tiers && item.tiers.length > 0) || item.tier || item.isQuarantined || item.isArbiter)
                             .map(item => ({
                               modelId: item.modelId,
-                              tier: item.tier || null,
+                              tier: item.tier || (item.tiers && item.tiers[0]) || null,
+                              tiers: item.tiers || (item.tier ? [item.tier] : []),
                               isQuarantined: !!item.isQuarantined,
                               isArbiter: !!item.isArbiter
                             }));
@@ -222,24 +240,28 @@ export const CouncilProvider = ({ children }) => {
           // A. If exists in history, apply saved modifications
           const memMatch = parsedMemory.find(item => item.modelId === modelId);
           if (memMatch) {
+            const itemTiers = memMatch.tiers || (memMatch.tier ? [memMatch.tier] : []);
             return {
               modelId,
               name,
-              tier: memMatch.tier || null,
+              tier: memMatch.tier || itemTiers[0] || null,
+              tiers: itemTiers,
               isQuarantined: !!memMatch.isQuarantined,
               isArbiter: !!memMatch.isArbiter
             };
           }
 
           // B. Else if exists in defaults, inject fallback configuration
-          const defaultMatch = DEFAULT_ROSTER.find(item => item.modelId === modelId);
-          if (defaultMatch) {
+          const defaultMatches = DEFAULT_ROSTER.filter(item => item.modelId === modelId);
+          if (defaultMatches.length > 0) {
+            const defaultTiers = defaultMatches.map(d => d.tier);
             return {
               modelId,
               name,
-              tier: defaultMatch.tier || null,
-              isQuarantined: !!defaultMatch.isQuarantined,
-              isArbiter: !!defaultMatch.isArbiter
+              tier: defaultMatches[0].tier || defaultTiers[0] || null,
+              tiers: defaultTiers,
+              isQuarantined: defaultMatches.some(dm => dm.isQuarantined),
+              isArbiter: defaultMatches.some(dm => dm.isArbiter)
             };
           }
 
@@ -248,6 +270,7 @@ export const CouncilProvider = ({ children }) => {
             modelId,
             name,
             tier: null,
+            tiers: [],
             isQuarantined: false,
             isArbiter: false
           };
@@ -280,6 +303,7 @@ export const CouncilProvider = ({ children }) => {
     const resetRoster = rosterRef.current.map(item => ({
       ...item,
       tier: null,
+      tiers: [],
       isQuarantined: false,
       isArbiter: false
     }));
@@ -297,6 +321,7 @@ export const CouncilProvider = ({ children }) => {
       newRoster = currentRoster.map(item => ({
         ...item,
         tier: null,
+        tiers: [],
         isQuarantined: false,
         isArbiter: false
       }));
@@ -312,8 +337,11 @@ export const CouncilProvider = ({ children }) => {
       }));
     } else if (['FAST', 'PRO', 'OMEGA', 'GOD'].includes(normalizedTarget)) {
       newRoster = currentRoster.map(item => {
-        if (item.tier && item.tier.toUpperCase() === normalizedTarget) {
-          return { ...item, tier: null };
+        const itemTiers = item.tiers || (item.tier ? [item.tier] : []);
+        const targetLower = normalizedTarget.toLowerCase();
+        if (itemTiers.includes(targetLower)) {
+          const updatedTiers = itemTiers.filter(t => t !== targetLower);
+          return { ...item, tiers: updatedTiers, tier: updatedTiers[0] || null };
         }
         return item;
       });
@@ -333,13 +361,15 @@ export const CouncilProvider = ({ children }) => {
       return { success: false, error: "Cannot activate quarantined node." };
     }
 
-    const isAlreadyInTier = currentRoster.some(item => item.modelId === modelId && item.tier === tier);
+    const itemTiers = model?.tiers || (model?.tier ? [model.tier] : []);
+    const isAlreadyInTier = itemTiers.includes(tier);
 
     let newRoster;
     if (isAlreadyInTier) {
       newRoster = currentRoster.map(item => {
-        if (item.modelId === modelId && item.tier === tier) {
-          return { ...item, tier: null };
+        if (item.modelId === modelId) {
+          const updatedTiers = (item.tiers || (item.tier ? [item.tier] : [])).filter(t => t !== tier);
+          return { ...item, tiers: updatedTiers, tier: updatedTiers[0] || null };
         }
         return item;
       });
@@ -347,14 +377,18 @@ export const CouncilProvider = ({ children }) => {
       saveRosterState(newRoster);
       return { success: true };
     } else {
-      const currentTierCount = currentRoster.filter(item => item.tier === tier).length;
+      const currentTierCount = currentRoster.filter(item => {
+        const tiers = item.tiers || (item.tier ? [item.tier] : []);
+        return tiers.includes(tier);
+      }).length;
       if (currentTierCount >= 5) {
         return { success: false, error: `Maximum of 5 seats reached for ${tier.toUpperCase()} Council.` };
       }
 
       newRoster = currentRoster.map(item => {
         if (item.modelId === modelId) {
-          return { ...item, tier };
+          const updatedTiers = [...(item.tiers || (item.tier ? [item.tier] : [])), tier];
+          return { ...item, tiers: updatedTiers, tier: updatedTiers[0] || null };
         }
         return item;
       });
@@ -391,7 +425,8 @@ export const CouncilProvider = ({ children }) => {
         return {
           ...item,
           isQuarantined,
-          tier: isQuarantined ? null : item.tier,
+          tier: null,
+          tiers: [],
           isArbiter: isQuarantined ? false : item.isArbiter
         };
       }
