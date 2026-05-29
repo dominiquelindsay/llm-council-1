@@ -6,14 +6,14 @@ export const useCouncil = () => useContext(CouncilContext);
 
 // Shared core fallback models used for initialization and fresh-fetch default states
 const DEFAULT_ROSTER = [
-  { modelId: 'openai/gpt-4o-mini', name: 'GPT-4o Mini', tier: 'fast', isQuarantined: false, isArbiter: true },
+  { modelId: 'openai/gpt-4o-mini', name: 'GPT-4o Mini', tier: 'fast', isQuarantined: false, isArbiter: false },
   { modelId: 'openai/gpt-4o', name: 'GPT-4o', tier: 'pro', isQuarantined: false, isArbiter: true },
   { modelId: 'anthropic/claude-3-5-sonnet', name: 'Claude 3.5 Sonnet', tier: 'pro', isQuarantined: false, isArbiter: false },
   { modelId: 'google/gemini-1.5-pro', name: 'Gemini 1.5 Pro', tier: 'pro', isQuarantined: false, isArbiter: false },
   { modelId: 'openai/gpt-4o', name: 'GPT-4o', tier: 'omega', isQuarantined: false, isArbiter: false },
-  { modelId: 'anthropic/claude-3-opus', name: 'Claude 3 Opus', tier: 'omega', isQuarantined: false, isArbiter: true },
+  { modelId: 'anthropic/claude-3-opus', name: 'Claude 3 Opus', tier: 'omega', isQuarantined: false, isArbiter: false },
   { modelId: 'google/gemini-1.5-pro', name: 'Gemini 1.5 Pro', tier: 'omega', isQuarantined: false, isArbiter: false },
-  { modelId: 'openai/o1-preview', name: 'o1 Preview', tier: 'god', isQuarantined: false, isArbiter: true },
+  { modelId: 'openai/o1-preview', name: 'o1 Preview', tier: 'god', isQuarantined: false, isArbiter: false },
   { modelId: 'anthropic/claude-3-5-sonnet', name: 'Claude 3.5 Sonnet', tier: 'god', isQuarantined: false, isArbiter: false },
   { modelId: 'google/gemini-1.5-pro', name: 'Gemini 1.5 Pro', tier: 'god', isQuarantined: false, isArbiter: false }
 ];

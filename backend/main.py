@@ -676,7 +676,8 @@ async def run_peer_review(model_name: str, original_prompt: str, council_respons
 
 
 # --- COUNCIL CONFIGURATION MEMORY SYNC ENDPOINTS ---
-COUNCIL_MEMORY_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "council_memory.json")
+from .config import DATA_DIR
+COUNCIL_MEMORY_PATH = os.path.join(os.path.dirname(DATA_DIR), "council_memory.json")
 
 @app.get("/api/council-memory")
 async def get_council_memory():
