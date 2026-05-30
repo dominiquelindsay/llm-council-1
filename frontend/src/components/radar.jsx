@@ -260,29 +260,15 @@ const Radar = ({ onClose }) => {
       border-color: #ff003c;
       box-shadow: 0 0 10px rgba(255, 0, 60, 0.3);
     }
-    .radar-close-btn {
-      position: fixed;
-      top: 12px;
-      right: 30px;
-      background: #0e1217;
-      backdrop-filter: blur(5px);
-      border: 1px solid #ff3e3e88;
-      color: #ff3e3e;
-      padding: 8px 16px;
-      font-size: 11px;
-      font-family: monospace;
-      letter-spacing: 2px;
-      cursor: pointer;
-      border-radius: 4px;
-      transition: all 0.2s;
-      font-weight: bold;
-      z-index: 10002;
-      box-shadow: 0 0 15px rgba(255, 62, 62, 0.2);
+    .radar-control-tile.close-tile {
+      border-color: #ff3e3e44;
+      background: rgba(255, 62, 62, 0.04);
+      box-shadow: 0 4px 10px rgba(255, 62, 62, 0.05);
     }
-    .radar-close-btn:hover {
-      background: rgba(255, 62, 62, 0.15);
-      border-color: #ff3e3e;
-      box-shadow: 0 0 20px rgba(255, 62, 62, 0.4);
+    .radar-control-tile.close-tile:hover {
+      border-color: rgba(255, 62, 62, 0.7);
+      box-shadow: 0 0 15px rgba(255, 62, 62, 0.25);
+      transform: translateY(-1px);
     }
     .radar-control-grid {
       display: flex;
@@ -325,15 +311,6 @@ const Radar = ({ onClose }) => {
       transform: translateY(-1px);
     }
     @media (max-width: 768px) {
-      .radar-close-btn {
-        top: 12px !important;
-        right: 15px !important;
-        font-size: 9px !important;
-        padding: 6px 12px !important;
-        letter-spacing: 1px !important;
-        background: #0e1217 !important;
-        box-shadow: 0 0 15px rgba(255, 62, 62, 0.35) !important;
-      }
       .radar-control-grid {
         display: grid !important;
         grid-template-columns: repeat(2, 1fr) !important;
@@ -345,7 +322,8 @@ const Radar = ({ onClose }) => {
         padding: 8px !important;
         gap: 6px !important;
       }
-      .radar-control-tile:first-child {
+      .radar-control-tile:first-child,
+      .radar-control-tile.close-tile {
         grid-column: span 2 !important;
       }
     }
@@ -358,18 +336,8 @@ const Radar = ({ onClose }) => {
   );
 
   return (
-    <>
+    <div className="radar-container" style={{ position: 'fixed', top: '60px', left: 'var(--sidebar-width, 340px)', right: 0, bottom: 0, zIndex: 1000, overflowY: 'auto', backdropFilter: 'blur(10px)', animation: 'flashlight-pulse 8s infinite ease-in-out', paddingBottom: '100px' }}>
       <style>{customStyles}</style>
-
-      <button 
-        type="button" 
-        onClick={onClose} 
-        className="radar-close-btn"
-      >
-        [ X ] // CLOSE_RADAR
-      </button>
-
-      <div className="radar-container" style={{ position: 'fixed', top: '60px', left: 'var(--sidebar-width, 340px)', right: 0, bottom: 0, zIndex: 1000, overflowY: 'auto', backdropFilter: 'blur(10px)', animation: 'flashlight-pulse 8s infinite ease-in-out', paddingBottom: '100px' }}>
 
       {toast && (
         <div className="toast-notification">
@@ -388,7 +356,45 @@ const Radar = ({ onClose }) => {
         
         {/* TIER CONTROL PANEL (FILTER HUD + PURGE GRID) */}
         <div className="radar-control-grid">
-          {['ALL', 'FAST', 'PRO', 'OMEGA', 'GOD', 'ARBITER', 'QUARANTINE'].map(f => {
+          {['ALL', 'FAST', 'PRO', 'OMEGA', 'GOD', 'ARBITER', 'QUARANTINE', 'CLOSE'].map(f => {
+            if (f === 'CLOSE') {
+              return (
+                <div key="CLOSE" className="radar-control-tile close-tile">
+                  <button 
+                    onClick={onClose}
+                    style={{
+                      background: 'rgba(255, 62, 62, 0.1)',
+                      color: '#ff3e3e',
+                      border: '1px solid #ff3e3e',
+                      padding: '8px 16px',
+                      fontSize: '11px',
+                      fontWeight: 'bold',
+                      letterSpacing: '2px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      boxShadow: '0 0 10px rgba(255, 62, 62, 0.2)',
+                      whiteSpace: 'nowrap',
+                      width: '100%',
+                      borderRadius: '2px'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.background = 'rgba(255, 62, 62, 0.25)';
+                      e.target.style.boxShadow = '0 0 15px rgba(255, 62, 62, 0.5)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.background = 'rgba(255, 62, 62, 0.1)';
+                      e.target.style.boxShadow = '0 0 10px rgba(255, 62, 62, 0.2)';
+                    }}
+                  >
+                    [ CLOSE_RADAR ]
+                  </button>
+                  <div style={{ height: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ff3e3e', fontSize: '9px', fontWeight: 'bold', fontFamily: 'monospace', letterSpacing: '1px' }}>
+                    [ SYSTEM_EXIT ]
+                  </div>
+                </div>
+              );
+            }
+
             const isQuarantine = f === 'QUARANTINE';
             const isFilterActive = activeFilter === f;
             const tileClass = `radar-control-tile ${isQuarantine ? 'quarantine-tile' : ''} ${isFilterActive ? 'active-tile' : ''}`;
@@ -661,8 +667,7 @@ const Radar = ({ onClose }) => {
           </div>
         </div>
       )}
-      </div>
-    </>
+    </div>
   );
 };
 export default Radar;
