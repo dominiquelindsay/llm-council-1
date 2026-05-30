@@ -687,29 +687,16 @@
     width: 100% !important;
   }
   
-  /* Filter controls - 3 columns grid stack */
-  .radar-container .radar-header-block > div:last-child {
-    display: grid !important;
-    grid-template-columns: repeat(3, 1fr) !important;
-    gap: 8px !important;
-    margin-top: 15px !important;
-  }
-  
-  .radar-container .radar-header-block > div:last-child > div {
-    gap: 4px !important;
-  }
-  
-  .radar-container .radar-header-block > div:last-child button {
-    padding: 6px 4px !important;
-    font-size: 8px !important;
-    letter-spacing: 1px !important;
-    width: 100% !important;
-  }
-
   /* Capacity / Seat allocation indicator layout */
-  .radar-container .radar-header-block > div:nth-child(4) {
-    margin-top: 10px !important;
+  .radar-container .radar-header-block .radar-capacity-matrix {
+    margin-top: 20px !important;
     height: auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    text-align: center !important;
   }
 
   /* Roster Cards grid - single column and tight padding */

@@ -358,7 +358,7 @@ const Radar = ({ onClose }) => {
   );
 
   return (
-    <div className="radar-container" style={{ position: 'fixed', top: '60px', left: 'var(--sidebar-width, 340px)', right: 0, bottom: 0, zIndex: 1000, overflowY: 'auto', backdropFilter: 'blur(10px)', animation: 'flashlight-pulse 8s infinite ease-in-out', paddingBottom: '100px' }}>
+    <>
       <style>{customStyles}</style>
 
       <button 
@@ -368,6 +368,8 @@ const Radar = ({ onClose }) => {
       >
         [ X ] // CLOSE_RADAR
       </button>
+
+      <div className="radar-container" style={{ position: 'fixed', top: '60px', left: 'var(--sidebar-width, 340px)', right: 0, bottom: 0, zIndex: 1000, overflowY: 'auto', backdropFilter: 'blur(10px)', animation: 'flashlight-pulse 8s infinite ease-in-out', paddingBottom: '100px' }}>
 
       {toast && (
         <div className="toast-notification">
@@ -433,7 +435,7 @@ const Radar = ({ onClose }) => {
         </div>
 
         {/* CAPACITY NODE MATRIX */}
-        <div style={{ marginTop: '20px', height: '40px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
+        <div className="radar-capacity-matrix" style={{ marginTop: '20px', height: '40px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
           {(activeFilter === 'ALL' || activeFilter === 'ARBITER' || activeFilter === 'QUARANTINE') ? (
             <div style={{ color: '#00f2ff', fontSize: '12px', letterSpacing: '4px', opacity: 0.6, fontWeight: 'bold', textAlign: 'center', width: '100%' }}>[ GLOBAL_VIEW ]</div>
           ) : (
@@ -659,7 +661,8 @@ const Radar = ({ onClose }) => {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 };
 export default Radar;
