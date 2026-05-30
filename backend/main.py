@@ -97,6 +97,37 @@ app.mount("/assets", StaticFiles(directory=assets_dir), name="frontend_assets")
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("council_api")
 
+# --- RETROSPECTIVE ONE-TIME MIGRATION ---
+@app.on_event("startup")
+async def migrate_legacy_titles():
+    async def migrate():
+        await asyncio.sleep(2.0)  # Let the server startup settle
+        print("[ SYSTEM MIGRATION ] Scanning for legacy conversations with 'New Conversation' titles...")
+        try:
+            convs = storage.list_conversations()
+            updated_count = 0
+            for c in convs:
+                if c.get("title") in ["New Conversation", "NEW DELIBERATION", "NEW_DELIBERATION"]:
+                    details = storage.get_conversation(c["id"])
+                    if details and details.get("messages"):
+                        first_user_msg = next((m for m in details["messages"] if m.get("role") == "user"), None)
+                        if first_user_msg and first_user_msg.get("content"):
+                            prompt_text = first_user_msg["content"].split("\n\n[ OVERRIDE:")[0]
+                            words = [w.strip(".,!?;:()\"'[]{}") for w in prompt_text.split()]
+                            words = [w.upper() for w in words if w]
+                            new_title = " ".join(words[:4]) if words else "UNTITLED_ARCHIVE"
+                            
+                            storage.update_conversation_title(c["id"], new_title)
+                            updated_count += 1
+            if updated_count > 0:
+                print(f"[ SYSTEM MIGRATION ] Success! Retrospectively auto-titled {updated_count} legacy archives.")
+            else:
+                print("[ SYSTEM MIGRATION ] Completed. No legacy archives required migration.")
+        except Exception as e:
+            print(f"[ SYSTEM MIGRATION ] Error during title migration: {e}")
+
+    asyncio.create_task(migrate())
+
 VISION_MODELS = ["claude", "gemini", "gpt", "grok", "o1", "o3", "pixtral", "vision", "deepseek", "mistral", "qwen"]
 
 def compress_image(file_bytes: bytes, max_size=(800, 800)) -> str:

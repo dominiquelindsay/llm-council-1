@@ -75,10 +75,13 @@ def list_conversations() -> List[Dict[str, Any]]:
                 with open(path, 'r') as f:
                     data = json.load(f)
                 
-                # Proactively clean up legacy/accidental blank conversations
+                # Proactively clean up legacy/accidental blank conversations (only if older than 30 seconds to prevent race conditions!)
                 if len(data.get("messages", [])) == 0:
+                    import time
                     try:
-                        os.remove(path)
+                        file_age = time.time() - os.path.getmtime(path)
+                        if file_age > 30:
+                            os.remove(path)
                     except OSError:
                         pass
                     continue

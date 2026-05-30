@@ -55,7 +55,7 @@ function App() {
   });
   const [trashedConversations, setTrashedConversations] = useState([]);
 
-  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+  const API_BASE = import.meta.env.VITE_API_URL || window.location.origin;
 
   const [currentConversationId, setCurrentConversationId] = useState(() => {
     const params = new URLSearchParams(window.location.search);
@@ -160,9 +160,7 @@ function App() {
       
       if (data.success && data.title) {
         setConversations(prev => prev.map(c => c.id === id ? { ...c, title: data.title } : c));
-        if (currentConversationId === id) {
-          setCurrentConversation(prev => ({ ...prev, title: data.title }));
-        }
+        setCurrentConversation(prev => prev && prev.id === id ? { ...prev, title: data.title } : prev);
       }
     } catch (error) {
       console.error("AUTO_TITLE_ERROR:", error);
