@@ -732,8 +732,18 @@ async def generate_auto_title(conversation_id: str, payload: dict = Body(...)):
         f"Request: {prompt_text[:500]}"
     )
     
-    response = await get_model_response("openai/gpt-4o-mini", title_prompt, [])
-    new_title = response.get("response", "UNTITLED_ARCHIVE").strip('"\'').upper()
+    new_title = ""
+    try:
+        response = await get_model_response("openai/gpt-4o-mini", title_prompt, [])
+        new_title = response.get("response", "").strip('"\'').upper()
+    except Exception as e:
+        print(f"[ AUTO_TITLE ] Error querying OpenRouter: {e}")
+        
+    # Robust fallback: if API failed or returned error string, extract first 4 words of the prompt
+    if not new_title or any(err in new_title for err in ["OFFLINE", "UNAVAILABLE", "TIMEOUT", "ERROR"]):
+        words = [w.strip(".,!?;:()\"'[]{}") for w in prompt_text.split()]
+        words = [w.upper() for w in words if w]
+        new_title = " ".join(words[:4]) if words else "UNTITLED_ARCHIVE"
     
     storage.update_conversation_title(conversation_id, new_title)
     return {"success": True, "title": new_title}

@@ -1,6 +1,19 @@
 import React, { useState, useRef, useEffect } from 'react';
 import sidebarLogo from '../assets/sidebar_logo.png'; 
 
+const formatDate = (dateStr) => {
+  if (!dateStr) return '2026.05.30';
+  try {
+    const d = new Date(dateStr);
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}.${mm}.${dd}`;
+  } catch (e) {
+    return '2026.05.30';
+  }
+};
+
 const Sidebar = ({ 
   conversations, 
   trashedConversations = [], 
@@ -461,8 +474,8 @@ const Sidebar = ({
                   </div>
                 )}
 
-                <div style={{ fontSize: '9px', color: '#333', marginTop: editingId === c.id ? '0' : '6px', fontFamily: 'monospace' }}>
-                  2026.03.30 // SYSTEM_AUTH_EST
+                <div style={{ fontSize: '11px', color: 'rgba(0, 242, 255, 0.45)', marginTop: editingId === c.id ? '0' : '6px', fontFamily: 'monospace', letterSpacing: '0.5px' }}>
+                  {formatDate(c.created_at)} // SYSTEM_AUTH_EST
                 </div>
               </div>
               
