@@ -170,6 +170,8 @@ def extract_document_text(file_bytes: bytes, filename: str) -> str:
 
 # --- PDF CINEMATIC CYBERNETIC CANVAS (LIGHT BLUEPRINT MODE - PRINTER FRIENDLY) ---
 class CinematicCanvas(canvas.Canvas):
+    is_dark = False # Class variable to toggle themes dynamically
+    
     def __init__(self, *args, **kwargs):
         canvas.Canvas.__init__(self, *args, **kwargs)
         self.pages = []
@@ -190,28 +192,48 @@ class CinematicCanvas(canvas.Canvas):
         
     def draw_background_and_grid(self):
         w, h = LETTER
-        # Draw clean white background (Saves 100% of background ink!)
-        self.setFillColor(colors.HexColor('#ffffff'))
-        self.rect(0, 0, w, h, fill=True, stroke=False)
-        
-        # Draw very subtle blueprint-style light slate/cyan grid
-        self.setStrokeColor(colors.Color(0.0, 0.4, 0.5, alpha=0.03))
-        self.setLineWidth(0.5)
-        for x in range(0, int(w), 40):
-            self.line(x, 0, x, h)
-        for y in range(0, int(h), 40):
-            self.line(0, y, w, y)
-            
-        # Draw cybernetic corner frames/brackets in dark cyan
         margin = 36
         
-        # Thin outer frame
-        self.setStrokeColor(colors.Color(0.0, 0.4, 0.5, alpha=0.10))
-        self.setLineWidth(0.5)
-        self.rect(margin, margin, w - 2 * margin, h - 2 * margin, fill=False, stroke=True)
-        
-        # Corner tech brackets
-        self.setStrokeColor(colors.HexColor('#006677'))
+        if self.is_dark:
+            # Draw deep dark background
+            self.setFillColor(colors.HexColor('#020204'))
+            self.rect(0, 0, w, h, fill=True, stroke=False)
+            
+            # Draw subtle neon-cyan grid
+            self.setStrokeColor(colors.Color(0.0, 0.95, 1.0, alpha=0.03))
+            self.setLineWidth(0.5)
+            for x in range(0, int(w), 40):
+                self.line(x, 0, x, h)
+            for y in range(0, int(h), 40):
+                self.line(0, y, w, y)
+                
+            # Draw cybernetic glowing corner frames/brackets
+            self.setStrokeColor(colors.Color(0.0, 0.95, 1.0, alpha=0.12))
+            self.setLineWidth(0.5)
+            self.rect(margin, margin, w - 2 * margin, h - 2 * margin, fill=False, stroke=True)
+            
+            self.setStrokeColor(colors.HexColor('#00f2ff'))
+        else:
+            # Draw clean white background (Saves 100% of background ink!)
+            self.setFillColor(colors.HexColor('#ffffff'))
+            self.rect(0, 0, w, h, fill=True, stroke=False)
+            
+            # Draw very subtle blueprint-style light slate/cyan grid
+            self.setStrokeColor(colors.Color(0.0, 0.4, 0.5, alpha=0.03))
+            self.setLineWidth(0.5)
+            for x in range(0, int(w), 40):
+                self.line(x, 0, x, h)
+            for y in range(0, int(h), 40):
+                self.line(0, y, w, y)
+                
+            # Draw cybernetic corner frames/brackets in dark cyan
+            self.setStrokeColor(colors.Color(0.0, 0.4, 0.5, alpha=0.10))
+            self.setLineWidth(0.5)
+            self.rect(margin, margin, w - 2 * margin, h - 2 * margin, fill=False, stroke=True)
+            
+            self.setStrokeColor(colors.HexColor('#006677'))
+            
+        # Draw Corner Tech Brackets (uses active stroke color set above)
         self.setLineWidth(1.2)
         bracket_len = 12
         
@@ -237,21 +259,38 @@ class CinematicCanvas(canvas.Canvas):
         
         # Draw headers and footers only on page 2+ (Leaving cover page clean)
         if self._pageNumber > 1:
-            # Top Header Watermarks (Dark cyan and dark orange)
-            self.setFont("Helvetica-Bold", 8)
-            self.setFillColor(colors.HexColor('#006677'))
-            self.drawString(margin + 10, h - margin - 15, "CLASSIFIED SYSTEM INTEL // ARBITER V11.0")
-            
-            self.setFillColor(colors.HexColor('#cc5500'))
-            self.drawRightString(w - margin - 10, h - margin - 15, "TOP SECRET // LEVEL 5 SECURITY")
-            
-            # Bottom Footer Watermarks
-            self.setFont("Helvetica-Bold", 8)
-            self.setFillColor(colors.HexColor('#556677'))
-            self.drawString(margin + 10, margin + 12, "RESTRICTED DISTRIBUTION // INTEL COLLECTIVE")
-            
-            self.setFillColor(colors.HexColor('#006677'))
-            self.drawRightString(w - margin - 10, margin + 12, f"LOG EXTRACT // PAGE {self._pageNumber} OF {page_count}")
+            if self.is_dark:
+                # Top Header Watermarks
+                self.setFont("Helvetica-Bold", 8)
+                self.setFillColor(colors.HexColor('#00f2ff'))
+                self.drawString(margin + 10, h - margin - 15, "CLASSIFIED SYSTEM INTEL // ARBITER V11.0")
+                
+                self.setFillColor(colors.HexColor('#ffb000'))
+                self.drawRightString(w - margin - 10, h - margin - 15, "TOP SECRET // LEVEL 5 SECURITY")
+                
+                # Bottom Footer Watermarks
+                self.setFont("Helvetica-Bold", 8)
+                self.setFillColor(colors.Color(1.0, 1.0, 1.0, alpha=0.5))
+                self.drawString(margin + 10, margin + 12, "RESTRICTED DISTRIBUTION // INTEL COLLECTIVE")
+                
+                self.setFillColor(colors.HexColor('#00f2ff'))
+                self.drawRightString(w - margin - 10, margin + 12, f"LOG EXTRACT // PAGE {self._pageNumber} OF {page_count}")
+            else:
+                # Top Header Watermarks (Dark cyan and dark orange)
+                self.setFont("Helvetica-Bold", 8)
+                self.setFillColor(colors.HexColor('#006677'))
+                self.drawString(margin + 10, h - margin - 15, "CLASSIFIED SYSTEM INTEL // ARBITER V11.0")
+                
+                self.setFillColor(colors.HexColor('#cc5500'))
+                self.drawRightString(w - margin - 10, h - margin - 15, "TOP SECRET // LEVEL 5 SECURITY")
+                
+                # Bottom Footer Watermarks
+                self.setFont("Helvetica-Bold", 8)
+                self.setFillColor(colors.HexColor('#556677'))
+                self.drawString(margin + 10, margin + 12, "RESTRICTED DISTRIBUTION // INTEL COLLECTIVE")
+                
+                self.setFillColor(colors.HexColor('#006677'))
+                self.drawRightString(w - margin - 10, margin + 12, f"LOG EXTRACT // PAGE {self._pageNumber} OF {page_count}")
 
 
 # --- DOCX PAGE NUMBER GENERATOR (PAGE X OF Y) ---
@@ -494,65 +533,197 @@ async def export_dossier(payload: dict = Body(...)):
         
         return {"subject": f"COUNCIL_DOSSIER: {title}", "body": summary}
     
-    # Resolving path to the frontend logo for cover page
-    logo_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "frontend", "src", "assets", "sidebar_logo.png")
+    # Resolving path to the frontend logo for cover page (fall back to Pillow-compatible council-logo.jpg)
+    logo_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "frontend", "src", "assets", "council-logo.jpg")
+    if not os.path.exists(logo_path):
+        logo_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "frontend", "src", "assets", "sidebar_logo.png")
     
-    if fmt == 'pdf':
+    if fmt in ['pdf', 'pdf_dark']:
+        is_dark = (fmt == 'pdf_dark')
         buffer = io.BytesIO()
         doc = SimpleDocTemplate(buffer, pagesize=LETTER, rightMargin=72, leftMargin=72, topMargin=72, bottomMargin=72)
         
         styles = getSampleStyleSheet()
         
-        # Base body style - Custom Normal (Deep charcoal text for maximum printer legibility)
-        style_n = ParagraphStyle('CustomNormal', parent=styles["Normal"], fontName='Helvetica', fontSize=10, leading=15, textColor='#1f2937', spaceAfter=10)
-        
-        # Color Palettes & Cinematic Typography (Blueprint / Physical dossier)
-        style_cover_title = ParagraphStyle('CoverTitle', fontName='Helvetica-Bold', fontSize=32, leading=38, textColor='#111827', alignment=TA_CENTER, spaceAfter=20)
-        style_cover_sub = ParagraphStyle('CoverSub', fontName='Helvetica-Bold', fontSize=13, textColor='#006677', alignment=TA_CENTER, spaceAfter=8)
-        style_cover_meta = ParagraphStyle('CoverMeta', fontName='Helvetica', fontSize=11, textColor='#4b5563', alignment=TA_CENTER, spaceAfter=6)
-        
-        style_cyan_header = ParagraphStyle('CyanHeader', parent=styles['Heading2'], fontName='Helvetica-Bold', fontSize=16, textColor='#006677', alignment=TA_CENTER, spaceBefore=20, spaceAfter=20)
-        style_orange_header = ParagraphStyle('OrangeHeader', parent=styles['Heading2'], fontName='Helvetica-Bold', fontSize=16, textColor='#cc5500', alignment=TA_CENTER, spaceBefore=20, spaceAfter=20)
-        style_arbiter = ParagraphStyle('Arbiter', parent=styles['Heading1'], fontName='Helvetica-Bold', fontSize=22, textColor='#006677', alignment=TA_CENTER, spaceBefore=30, spaceAfter=30)
-        
-        # Cybernetic Container Panel styles (Light-ink background fills and clean borders)
-        style_suggestion = ParagraphStyle(
-            'Suggestion', 
-            fontName='Helvetica-Oblique', 
-            fontSize=11, 
-            leading=15,
-            textColor='#7c2d12', # Deep warm orange text
-            leftIndent=20, 
-            rightIndent=20, 
-            spaceBefore=15,
-            spaceAfter=15,
-            backColor='#fff7ed', # Faint warm orange background
-            borderColor='#f97316', # Orange border
-            borderWidth=1, 
-            borderPadding=12,
-            borderRadius=4
-        )
-        style_list = ParagraphStyle('List', parent=style_n, leftIndent=20, textColor='#374151')
-        
-        # V10.3 specific user styles
-        style_user_header = ParagraphStyle('UserHeader', fontName='Helvetica-Bold', fontSize=13, textColor='#cc5500', alignment=TA_CENTER, spaceBefore=10, spaceAfter=10)
-        style_user_body = ParagraphStyle(
-            'UserBody', 
-            fontName='Helvetica-Oblique', 
-            fontSize=11, 
-            leading=15,
-            textColor='#78350f', # Deep amber/gold text
-            alignment=TA_CENTER, 
-            leftIndent=40, 
-            rightIndent=40,
-            backColor='#fffbeb', # Faint gold background
-            borderColor='#f59e0b', # Amber border
-            borderWidth=1,
-            borderPadding=12,
-            borderRadius=4,
-            spaceBefore=10,
-            spaceAfter=20
-        )
+        # Color Palettes & Cinematic Typography (Dual-Theme Styles)
+        if is_dark:
+            style_n = ParagraphStyle('CustomNormal', parent=styles["Normal"], fontName='Helvetica', fontSize=10, leading=15, textColor='#e2e8f0', spaceAfter=10)
+            style_cover_title = ParagraphStyle('CoverTitle', fontName='Helvetica-Bold', fontSize=32, leading=38, textColor='#ffffff', alignment=TA_CENTER, spaceAfter=20)
+            style_cover_sub = ParagraphStyle('CoverSub', fontName='Helvetica-Bold', fontSize=13, textColor='#00f2ff', alignment=TA_CENTER, spaceAfter=8)
+            style_cover_meta = ParagraphStyle('CoverMeta', fontName='Helvetica', fontSize=11, textColor='#cbd5e1', alignment=TA_CENTER, spaceAfter=6)
+            
+            style_cyan_header = ParagraphStyle('CyanHeader', parent=styles['Heading2'], fontName='Helvetica-Bold', fontSize=16, textColor='#00f2ff', alignment=TA_CENTER, spaceBefore=20, spaceAfter=20)
+            style_orange_header = ParagraphStyle('OrangeHeader', parent=styles['Heading2'], fontName='Helvetica-Bold', fontSize=16, textColor='#ffb000', alignment=TA_CENTER, spaceBefore=20, spaceAfter=20)
+            style_arbiter = ParagraphStyle('Arbiter', parent=styles['Heading1'], fontName='Helvetica-Bold', fontSize=22, textColor='#00f2ff', alignment=TA_CENTER, spaceBefore=30, spaceAfter=30)
+            
+            style_cover_classification = ParagraphStyle(
+                'CoverClassification',
+                fontName='Helvetica-Bold',
+                fontSize=9,
+                leading=11,
+                textColor='#ffffff',
+                alignment=TA_CENTER,
+                backColor='#1c120c',
+                borderColor='#ffb000',
+                borderWidth=1,
+                borderPadding=6,
+                borderRadius=3,
+                spaceAfter=30
+            )
+            style_telemetry = ParagraphStyle(
+                'CoverTelemetry',
+                fontName='Courier-Bold',
+                fontSize=8,
+                leading=11,
+                textColor='#00f2ff',
+                alignment=TA_CENTER,
+                spaceAfter=25
+            )
+            style_cover_prompt_label = ParagraphStyle(
+                'CoverPromptLabel',
+                fontName='Helvetica-Bold',
+                fontSize=9,
+                textColor='#ffb000',
+                alignment=TA_CENTER,
+                spaceAfter=5
+            )
+            style_cover_prompt_body = ParagraphStyle(
+                'CoverPromptBody',
+                fontName='Helvetica-Oblique',
+                fontSize=10,
+                leading=14,
+                textColor='#ffe3a3',
+                alignment=TA_CENTER,
+                backColor='#1a1510',
+                borderColor='#ffb000',
+                borderWidth=1,
+                borderPadding=10,
+                borderRadius=4
+            )
+            style_suggestion = ParagraphStyle(
+                'Suggestion', 
+                fontName='Helvetica-Oblique', 
+                fontSize=11, 
+                leading=15,
+                textColor='#ffffff', 
+                leftIndent=20, 
+                rightIndent=20, 
+                spaceBefore=15,
+                spaceAfter=15,
+                backColor='#1c120c', 
+                borderColor='#ffb000', 
+                borderWidth=1, 
+                borderPadding=12,
+                borderRadius=4
+            )
+            style_list = ParagraphStyle('List', parent=style_n, leftIndent=20, textColor='#cbd5e1')
+            style_user_header = ParagraphStyle('UserHeader', fontName='Helvetica-Bold', fontSize=13, textColor='#ffb000', alignment=TA_CENTER, spaceBefore=10, spaceAfter=10)
+            style_user_body = ParagraphStyle(
+                'UserBody', 
+                fontName='Helvetica-Oblique', 
+                fontSize=11, 
+                leading=15,
+                textColor='#ffe3a3', 
+                alignment=TA_CENTER, 
+                leftIndent=40, 
+                rightIndent=40,
+                backColor='#1a1510',
+                borderColor='#ffb000',
+                borderWidth=1,
+                borderPadding=12,
+                borderRadius=4,
+                spaceBefore=10,
+                spaceAfter=20
+            )
+        else:
+            style_n = ParagraphStyle('CustomNormal', parent=styles["Normal"], fontName='Helvetica', fontSize=10, leading=15, textColor='#1f2937', spaceAfter=10)
+            style_cover_title = ParagraphStyle('CoverTitle', fontName='Helvetica-Bold', fontSize=32, leading=38, textColor='#111827', alignment=TA_CENTER, spaceAfter=20)
+            style_cover_sub = ParagraphStyle('CoverSub', fontName='Helvetica-Bold', fontSize=13, textColor='#006677', alignment=TA_CENTER, spaceAfter=8)
+            style_cover_meta = ParagraphStyle('CoverMeta', fontName='Helvetica', fontSize=11, textColor='#4b5563', alignment=TA_CENTER, spaceAfter=6)
+            
+            style_cyan_header = ParagraphStyle('CyanHeader', parent=styles['Heading2'], fontName='Helvetica-Bold', fontSize=16, textColor='#006677', alignment=TA_CENTER, spaceBefore=20, spaceAfter=20)
+            style_orange_header = ParagraphStyle('OrangeHeader', parent=styles['Heading2'], fontName='Helvetica-Bold', fontSize=16, textColor='#cc5500', alignment=TA_CENTER, spaceBefore=20, spaceAfter=20)
+            style_arbiter = ParagraphStyle('Arbiter', parent=styles['Heading1'], fontName='Helvetica-Bold', fontSize=22, textColor='#006677', alignment=TA_CENTER, spaceBefore=30, spaceAfter=30)
+            
+            style_cover_classification = ParagraphStyle(
+                'CoverClassification',
+                fontName='Helvetica-Bold',
+                fontSize=9,
+                leading=11,
+                textColor='#cc5500',
+                alignment=TA_CENTER,
+                backColor='#fff2e2',
+                borderColor='#f97316',
+                borderWidth=1,
+                borderPadding=6,
+                borderRadius=3,
+                spaceAfter=30
+            )
+            style_telemetry = ParagraphStyle(
+                'CoverTelemetry',
+                fontName='Courier-Bold',
+                fontSize=8,
+                leading=11,
+                textColor='#006677',
+                alignment=TA_CENTER,
+                spaceAfter=25
+            )
+            style_cover_prompt_label = ParagraphStyle(
+                'CoverPromptLabel',
+                fontName='Helvetica-Bold',
+                fontSize=9,
+                textColor='#cc5500',
+                alignment=TA_CENTER,
+                spaceAfter=5
+            )
+            style_cover_prompt_body = ParagraphStyle(
+                'CoverPromptBody',
+                fontName='Helvetica-Oblique',
+                fontSize=10,
+                leading=14,
+                textColor='#78350f',
+                alignment=TA_CENTER,
+                backColor='#fffbeb',
+                borderColor='#f59e0b',
+                borderWidth=1,
+                borderPadding=10,
+                borderRadius=4
+            )
+            style_suggestion = ParagraphStyle(
+                'Suggestion', 
+                fontName='Helvetica-Oblique', 
+                fontSize=11, 
+                leading=15,
+                textColor='#7c2d12', 
+                leftIndent=20, 
+                rightIndent=20, 
+                spaceBefore=15,
+                spaceAfter=15,
+                backColor='#fff7ed', 
+                borderColor='#f97316', 
+                borderWidth=1, 
+                borderPadding=12,
+                borderRadius=4
+            )
+            style_list = ParagraphStyle('List', parent=style_n, leftIndent=20, textColor='#374151')
+            style_user_header = ParagraphStyle('UserHeader', fontName='Helvetica-Bold', fontSize=13, textColor='#cc5500', alignment=TA_CENTER, spaceBefore=10, spaceAfter=10)
+            style_user_body = ParagraphStyle(
+                'UserBody', 
+                fontName='Helvetica-Oblique', 
+                fontSize=11, 
+                leading=15,
+                textColor='#78350f', 
+                alignment=TA_CENTER, 
+                leftIndent=40, 
+                rightIndent=40,
+                backColor='#fffbeb',
+                borderColor='#f59e0b',
+                borderWidth=1,
+                borderPadding=12,
+                borderRadius=4,
+                spaceBefore=10,
+                spaceAfter=20
+            )
         
         story = []
         
@@ -722,6 +893,7 @@ async def export_dossier(payload: dict = Body(...)):
                         safe_fallback = saxutils.escape(para.strip()).replace('\n', '<br/>')
                         story.append(Paragraph(safe_fallback, active_style))
                         
+        CinematicCanvas.is_dark = is_dark
         doc.build(story, canvasmaker=CinematicCanvas)
         buffer.seek(0)
         return Response(content=buffer.getvalue(), media_type="application/pdf")
