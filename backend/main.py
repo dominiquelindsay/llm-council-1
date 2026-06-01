@@ -187,9 +187,26 @@ class PageNumCanvas(canvas.Canvas):
         canvas.Canvas.save(self)
         
     def draw_page_number(self, page_count):
-        self.setFont("Helvetica-Bold", 9)
-        self.setFillColorRGB(0.5, 0.5, 0.5)
-        self.drawRightString(LETTER[0] - 72, 36, f"PAGE {self._pageNumber} OF {page_count}")
+        if self._pageNumber == 1:
+            w, h = LETTER
+            # Draw gorgeous physical manila cardstock background on Cover Page (Page 1)
+            self.setFillColor(colors.HexColor('#f5eedc')) # Premium manila folder cream/tan
+            self.rect(0, 0, w, h, fill=True, stroke=False)
+            
+            # Distressed red classification bands at top and bottom
+            self.setFillColor(colors.HexColor('#cc3333'))
+            self.rect(36, h - 50, w - 72, 14, fill=True, stroke=False)
+            self.rect(36, 36, w - 72, 14, fill=True, stroke=False)
+            
+            # Top/Bottom classification stamps
+            self.setFont("Helvetica-Bold", 8)
+            self.setFillColor(colors.HexColor('#ffffff'))
+            self.drawCentredString(w / 2.0, h - 47, "TOP SECRET // SECURITY PROTOCOL: LEVEL 5 // CLASSIFIED INTEL DIRECTIVE")
+            self.drawCentredString(w / 2.0, 39, "TOP SECRET // RESTRICTED DISTRIBUTION // SECURE RECORD")
+        else:
+            self.setFont("Helvetica-Bold", 9)
+            self.setFillColorRGB(0.5, 0.5, 0.5)
+            self.drawRightString(LETTER[0] - 72, 36, f"PAGE {self._pageNumber} OF {page_count}")
 
 
 # --- DOCX PAGE NUMBER GENERATOR (PAGE X OF Y) ---
@@ -462,24 +479,70 @@ async def export_dossier(payload: dict = Body(...)):
         
         story = []
         
-        # V10.3: The Cinematic Cover Page (Raised Title Block)
-        story.append(Spacer(1, 108)) # Reduced from 180 to 108 to lift an inch
-        story.append(Paragraph("COUNCIL_LOG", style_cover_sub))
-        story.append(Paragraph(title.upper(), style_cover_title))
-        story.append(Paragraph(f"INTELLIGENCE TIER: [ {tier} ]", style_cover_meta))
-        story.append(Paragraph(f"EXTRACTED: {date_str}", style_cover_meta))
-        story.append(Spacer(1, 40))
+        # --- THE DEDICATED TOP-SECRET CLASSIFIED MANILA COVER SHEET ---
+        story.append(Spacer(1, 35))
         
-        # Embed physical logo if exists
+        # 1. Giant Sidebar Logo centered (occupies half the page height!)
         if os.path.exists(logo_path):
             try:
                 img = RLImage(logo_path)
-                img._restrictSize(220, 220)
+                img._restrictSize(300, 324) 
                 img.hAlign = 'CENTER'
                 story.append(img)
-                story.append(Spacer(1, 40))
+                story.append(Spacer(1, 15))
             except Exception as e:
                 logger.warning(f"Could not load cover logo: {e}")
+                
+        # 2. Main Title & Subtitle block
+        story.append(Paragraph("COUNCIL DECRYPT LOG // CLASSIFIED RECORD", style_cover_sub))
+        story.append(Paragraph(title.upper(), style_cover_title))
+        story.append(Spacer(1, 10))
+        
+        # 3. Retro Courier case file metadata block (typewriter style)
+        style_case_meta = ParagraphStyle(
+            'CoverMetaBox',
+            parent=style_cover_meta,
+            fontName='Courier-Bold',
+            fontSize=9,
+            leading=14,
+            textColor='#111827',
+            alignment=TA_CENTER,
+            spaceAfter=25
+        )
+        meta_html = (
+            f"CASE DIRECTIVE NO: SECURE_KEY_{uuid.uuid4().hex[:8].upper()}<br/>"
+            f"OPERATIONAL TIER: [ {tier} ] &nbsp;&nbsp;&nbsp;&nbsp;//&nbsp;&nbsp;&nbsp;&nbsp; EXTRACTED: {date_str}<br/>"
+            f"SECURITY PROTOCOL: LEVEL 5 // DECRYPT STATUS: SUCCESS"
+        )
+        story.append(Paragraph(meta_html, style_case_meta))
+        
+        # 4. Original user prompt Signal Directive box
+        user_prompt = "NO ACTIVE INQUIRY REGISTERED"
+        for msg in messages:
+            if msg.get('role') == 'user':
+                user_prompt = msg.get('content', '').split("\n\n[ OVERRIDE:")[0] # Strip off any heavy backend parameters
+                break
+                
+        story.append(Paragraph("/// TARGET INQUIRY SIGNAL DIRECTIVE ///", ParagraphStyle('CoverPromptLabel', fontName='Helvetica-Bold', fontSize=9, textColor='#cc3333', alignment=TA_CENTER, spaceAfter=5)))
+        
+        style_cover_prompt_body = ParagraphStyle(
+            'CoverPromptBody',
+            fontName='Helvetica-Oblique',
+            fontSize=10,
+            leading=14,
+            textColor='#444444',
+            alignment=TA_CENTER,
+            leftIndent=40,
+            rightIndent=40,
+            spaceAfter=20
+        )
+        clean_prompt = clean_body_text(user_prompt)
+        if len(clean_prompt) > 300:
+            clean_prompt = clean_prompt[:300] + "..."
+        story.append(Paragraph(saxutils.escape(clean_prompt), style_cover_prompt_body))
+        
+        # 5. Hard Page Break so deliberations start on Page 2
+        story.append(PageBreak())
         
         for idx, el in enumerate(elements):
             if el['type'] == 'user_header':
