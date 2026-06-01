@@ -185,36 +185,138 @@ class PageNumCanvas(canvas.Canvas):
             self.draw_page_number(page_count)
             canvas.Canvas.showPage(self)
         canvas.Canvas.save(self)
-        
+
+    def _draw_cover_stamp(self, text, x, y, width, height, angle=0):
+        self.saveState()
+        self.translate(x + width / 2, y + height / 2)
+        self.rotate(angle)
+        self.setStrokeColor(colors.HexColor('#b91c1c'))
+        self.setFillColor(colors.HexColor('#b91c1c'))
+        self.setLineWidth(2.4)
+        self.roundRect(-width / 2, -height / 2, width, height, 5, fill=False, stroke=True)
+        self.setLineWidth(0.9)
+        self.roundRect(-width / 2 + 5, -height / 2 + 5, width - 10, height - 10, 3, fill=False, stroke=True)
+        self.setFont("Helvetica-Bold", 15)
+        self.drawCentredString(0, -5, text)
+        self.restoreState()
+
+    def _draw_cover_field(self, label, value, x, y, width):
+        self.setFont("Courier-Bold", 6.8)
+        self.setFillColor(colors.HexColor('#7f1d1d'))
+        self.drawString(x, y + 12, label)
+        self.setStrokeColor(colors.HexColor('#b91c1c'))
+        self.setLineWidth(0.8)
+        self.line(x + 34, y + 13, x + width, y + 13)
+        self.setFillColor(colors.HexColor('#111827'))
+        self.setFont("Courier-Bold", 8)
+        self.drawString(x + 38, y + 9, value[:38])
+
+    def _draw_cover(self):
+        w, h = LETTER
+        doc = getattr(self, '_doctemplate', None)
+        session_title = getattr(doc, 'session_title', 'UNNAMED_SESSION')
+        tier = getattr(doc, 'dossier_tier', 'PRO')
+        date_str = getattr(doc, 'dossier_date', '')
+        prompt = getattr(doc, 'cover_prompt', 'NO ACTIVE INQUIRY REGISTERED')
+        logo_path = getattr(doc, 'cover_logo_path', None)
+
+        import hashlib
+        case_hash = hashlib.md5(session_title.encode('utf-8')).hexdigest()[:8].upper()
+
+        # Heavy manila security stock.
+        self.setFillColor(colors.HexColor('#f2e4bf'))
+        self.rect(0, 0, w, h, fill=True, stroke=False)
+        self.setFillColor(colors.Color(0.88, 0.72, 0.45, alpha=0.22))
+        for y in range(18, int(h), 29):
+            self.rect(0, y, w, 1.1, fill=True, stroke=False)
+        self.setFillColor(colors.Color(0.98, 0.93, 0.82, alpha=0.35))
+        for x in range(0, int(w), 23):
+            self.rect(x, 0, 0.7, h, fill=True, stroke=False)
+
+        # Red classified file border.
+        self.setStrokeColor(colors.HexColor('#b91c1c'))
+        self.setLineWidth(4)
+        self.roundRect(26, 26, w - 52, h - 52, 12, fill=False, stroke=True)
+        self.setLineWidth(1.2)
+        self.roundRect(35, 35, w - 70, h - 70, 8, fill=False, stroke=True)
+
+        # Header metadata fields and stamps.
+        self._draw_cover_field("No:", f"COUNCIL-{case_hash}", 54, h - 72, 145)
+        self._draw_cover_field("Tier:", tier, 54, h - 95, 145)
+        self._draw_cover_stamp("TOP SECRET", w - 190, h - 95, 130, 36, angle=-4)
+        self._draw_cover_stamp("EYES ONLY", 58, h - 151, 126, 34, angle=4)
+
+        self.setFillColor(colors.HexColor('#111827'))
+        self.setFont("Helvetica-Bold", 54)
+        self.drawCentredString(w / 2, h - 178, "CLASSIFIED")
+        self.setFont("Helvetica-Bold", 12)
+        self.setFillColor(colors.HexColor('#7f1d1d'))
+        self.drawCentredString(w / 2, h - 199, "LLM COUNCIL // INTELLIGENCE DOSSIER")
+
+        # Black restricted-information block.
+        panel_x, panel_y, panel_w, panel_h = 82, h - 292, w - 164, 76
+        self.setFillColor(colors.HexColor('#111111'))
+        self.rect(panel_x, panel_y, panel_w, panel_h, fill=True, stroke=False)
+        self.setStrokeColor(colors.HexColor('#b91c1c'))
+        self.setLineWidth(1.5)
+        self.rect(panel_x, panel_y, panel_w, panel_h, fill=False, stroke=True)
+        self.setFillColor(colors.HexColor('#f2e4bf'))
+        self.setFont("Courier-Bold", 7.5)
+        self.drawCentredString(w / 2, panel_y + 53, "ALL INTELLIGENCE, RANKINGS, REASONING, AND SYNTHESIS HEREIN ARE RESTRICTED")
+        self.drawCentredString(w / 2, panel_y + 39, "TO THE ACTIVE OPERATOR AND AUTHORIZED COUNCIL PROTOCOLS ONLY")
+        self.setFillColor(colors.HexColor('#f2e4bf'))
+        self.rect(panel_x + 62, panel_y + 16, panel_w - 124, 14, fill=True, stroke=False)
+        self.setFillColor(colors.HexColor('#111111'))
+        self.setFont("Helvetica-Bold", 9)
+        self.drawCentredString(w / 2, panel_y + 19, "SESSION TITLE: " + session_title.upper()[:54])
+
+        # Council seal at the center of the file.
+        if logo_path and os.path.exists(logo_path):
+            try:
+                logo_size = 230
+                self.drawImage(logo_path, (w - logo_size) / 2, 286, width=logo_size, height=logo_size, preserveAspectRatio=True, mask='auto')
+            except Exception as e:
+                logger.warning(f"Could not load cover logo: {e}")
+
+        # Prompt dossier field.
+        prompt = clean_body_text(prompt)
+        if len(prompt) > 360:
+            prompt = prompt[:360] + "..."
+
+        self.setFillColor(colors.HexColor('#b91c1c'))
+        self.setFont("Helvetica-Bold", 12)
+        self.drawCentredString(w / 2, 252, "/// TARGET INQUIRY SIGNAL DIRECTIVE ///")
+
+        prompt_style = ParagraphStyle(
+            'CanvasCoverPrompt',
+            fontName='Helvetica-Oblique',
+            fontSize=9.5,
+            leading=13,
+            textColor=colors.HexColor('#111827'),
+            alignment=TA_CENTER
+        )
+        prompt_table = Table([[Paragraph(saxutils.escape(prompt), prompt_style)]], colWidths=[410])
+        prompt_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#fff8e8')),
+            ('BOX', (0, 0), (-1, -1), 1.4, colors.HexColor('#b91c1c')),
+            ('INNERGRID', (0, 0), (-1, -1), 0.35, colors.HexColor('#d39a7a')),
+            ('PADDING', (0, 0), (-1, -1), 9),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ]))
+        tw, th = prompt_table.wrapOn(self, 410, 90)
+        prompt_table.drawOn(self, (w - tw) / 2, 150 + max(0, 72 - th) / 2)
+
+        self.setFont("Helvetica-Bold", 28)
+        self.setFillColor(colors.HexColor('#111827'))
+        self.drawCentredString(w / 2, 95, "CONFIDENTIAL INFORMATION")
+        self.setFont("Courier-Bold", 7.5)
+        self.setFillColor(colors.HexColor('#111827'))
+        self.drawString(54, 53, f"EXTRACTED: {date_str}")
+        self.drawRightString(w - 54, 53, "FORM-104 // NEON GHOST COUNCIL")
+
     def draw_page_number(self, page_count):
         if self._pageNumber == 1:
-            w, h = LETTER
-            # Draw gorgeous physical manila cardstock background on Cover Page (Page 1)
-            self.setFillColor(colors.HexColor('#f5eedc')) # Premium manila folder cream/tan
-            self.rect(0, 0, w, h, fill=True, stroke=False)
-            
-            # Distressed red double rounded border
-            self.setStrokeColor(colors.HexColor('#cc3333'))
-            self.setLineWidth(3)
-            self.roundRect(28, 28, w - 56, h - 56, 12, fill=False, stroke=True)
-            
-            self.setLineWidth(1)
-            self.roundRect(34, 34, w - 68, h - 68, 9, fill=False, stroke=True)
-            
-            # Top-Left metadata: No and Name fields resembling real file folder tags
-            self.setFont("Courier-Bold", 10)
-            self.setFillColor(colors.HexColor('#111827'))
-            session_title = getattr(self._doctemplate, 'session_title', 'UNNAMED_SESSION')
-            import hashlib
-            case_hash = hashlib.md5(session_title.encode('utf-8')).hexdigest()[:8].upper()
-            self.drawString(55, h - 75, f"No:   SECURE_KEY_{case_hash}")
-            self.drawString(55, h - 90, f"Name: FOR YOUR EYE'S ONLY")
-            
-            # Bottom corners regulatory reference codes
-            self.setFont("Courier-Bold", 8)
-            self.setFillColor(colors.HexColor('#111827'))
-            self.drawString(55, 52, "FORM-104 // CLASSIFIED SECURITY DIRECTIVE")
-            self.drawRightString(w - 55, 52, "NSN 7540-01-213-7901")
+            self._draw_cover()
         else:
             self.setFont("Helvetica-Bold", 9)
             self.setFillColorRGB(0.5, 0.5, 0.5)
@@ -273,7 +375,7 @@ def parse_dossier_elements(messages):
     for msg in messages:
         if msg.get('role') == 'user':
             elements.append({'type': 'user_header', 'content': '/// UPLINK INITIATED: USER OVERRIDE'})
-            elements.append({'type': 'user_body', 'content': msg.get('content', '')})
+            elements.append({'type': 'user_body', 'content': extract_cover_prompt([msg])})
         elif msg.get('role') == 'assistant':
             if 'stage1' in msg and isinstance(msg['stage1'], list):
                 for item in msg['stage1']:
@@ -319,6 +421,35 @@ def clean_body_text(text: str) -> str:
     text = re.sub(r'^## (.*)', r'\1', text, flags=re.MULTILINE)
     text = re.sub(r'^# (.*)', r'\1', text, flags=re.MULTILINE)
     return text.strip()
+
+def extract_cover_prompt(messages, fallback="NO ACTIVE INQUIRY REGISTERED"):
+    """Find the user-entered query for the dossier cover."""
+    for msg in messages:
+        if msg.get('role') == 'user':
+            content = msg.get('content', '')
+            if content:
+                return content.split("\n\n[ OVERRIDE:")[0].strip()
+    return fallback
+
+def draw_dossier_body_background(c, doc):
+    w, h = LETTER
+    c.saveState()
+    c.setFillColor(colors.HexColor('#fbf4df'))
+    c.rect(0, 0, w, h, fill=True, stroke=False)
+    c.setFillColor(colors.Color(0.88, 0.72, 0.45, alpha=0.12))
+    for y in range(18, int(h), 29):
+        c.rect(0, y, w, 0.8, fill=True, stroke=False)
+    c.setStrokeColor(colors.HexColor('#d6a15f'))
+    c.setLineWidth(0.8)
+    c.roundRect(42, 42, w - 84, h - 84, 7, fill=False, stroke=True)
+    c.setStrokeColor(colors.HexColor('#b91c1c'))
+    c.setLineWidth(1.1)
+    c.line(72, h - 58, w - 72, h - 58)
+    c.setFont("Courier-Bold", 7)
+    c.setFillColor(colors.HexColor('#7f1d1d'))
+    c.drawString(72, h - 50, "COUNCIL DOSSIER // CONTROLLED DISCLOSURE")
+    c.drawRightString(w - 72, h - 50, getattr(doc, 'session_title', 'UNNAMED_SESSION')[:42].upper())
+    c.restoreState()
 
 def generate_docx_in_memory(title, tier, date_str, elements, logo_path):
     doc = docx.Document()
@@ -491,78 +622,11 @@ async def export_dossier(payload: dict = Body(...)):
         
         story = []
         
-        # --- THE DEDICATED TOP-SECRET CLASSIFIED MANILA COVER SHEET ---
-        story.append(Spacer(1, 15))
-        
-        # 1. Red rubber stamp looking "FOR YOUR EYE'S ONLY" text
-        style_stamp = ParagraphStyle(
-            'StampText',
-            fontName='Helvetica-Bold',
-            fontSize=22,
-            leading=26,
-            textColor='#cc3333',
-            alignment=TA_CENTER
-        )
-        stamp_table = Table([[Paragraph("<b>FOR YOUR EYE'S ONLY</b>", style_stamp)]], colWidths=[280])
-        stamp_table.setStyle(TableStyle([
-            ('BOX', (0, 0), (-1, -1), 3, colors.HexColor('#cc3333')),
-            ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#f5eedc')),
-            ('PADDING', (0, 0), (-1, -1), 8),
-            ('TOPPADDING', (0, 0), (-1, -1), 10),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ]))
-        stamp_table.hAlign = 'CENTER'
-        story.append(stamp_table)
-        story.append(Spacer(1, 15))
-        
-        # 2. Giant Sidebar Logo centered (occupies exactly 50% of the page height!)
-        if os.path.exists(logo_path):
-            try:
-                img = RLImage(logo_path)
-                img._restrictSize(260, 280) 
-                img.hAlign = 'CENTER'
-                story.append(img)
-            except Exception as e:
-                logger.warning(f"Could not load cover logo: {e}")
-                
-        story.append(Spacer(1, 15))
-        
-        # 3. Original user prompt Signal Directive box lowered to the bottom of the page
-        user_prompt = "NO ACTIVE INQUIRY REGISTERED"
-        for msg in messages:
-            if msg.get('role') == 'user':
-                user_prompt = msg.get('content', '').split("\n\n[ OVERRIDE:")[0] # Strip off any heavy parameters
-                break
-                
-        story.append(Paragraph("/// TARGET INQUIRY SIGNAL DIRECTIVE ///", ParagraphStyle('CoverPromptLabel', fontName='Helvetica-Bold', fontSize=9, textColor='#cc3333', alignment=TA_CENTER, spaceAfter=8)))
-        
-        style_cover_prompt_body = ParagraphStyle(
-            'CoverPromptBody',
-            fontName='Helvetica-Oblique',
-            fontSize=10,
-            leading=14,
-            textColor='#111827',
-            alignment=TA_CENTER
-        )
-        
-        clean_prompt = clean_body_text(user_prompt)
-        if len(clean_prompt) > 280:
-            clean_prompt = clean_prompt[:280] + "..."
-            
-        prompt_table = Table([[Paragraph(saxutils.escape(clean_prompt), style_cover_prompt_body)]], colWidths=[440])
-        prompt_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#ffffff')),
-            ('BOX', (0, 0), (-1, -1), 1.5, colors.HexColor('#cc3333')),
-            ('PADDING', (0, 0), (-1, -1), 10),
-            ('TOPPADDING', (0, 0), (-1, -1), 10),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ]))
-        prompt_table.hAlign = 'CENTER'
-        story.append(prompt_table)
-        
-        # 4. Hard Page Break so deliberations start on Page 2
+        user_prompt = payload.get('cover_prompt') or extract_cover_prompt(messages)
+
+        # Page 1 is drawn entirely by PageNumCanvas so the cover behaves like
+        # a designed dossier sheet instead of ordinary document flow.
+        story.append(Spacer(1, 1))
         story.append(PageBreak())
         
         for idx, el in enumerate(elements):
@@ -626,7 +690,11 @@ async def export_dossier(payload: dict = Body(...)):
                         story.append(Paragraph(safe_fallback, active_style))
                         
         doc.session_title = title
-        doc.build(story, canvasmaker=PageNumCanvas)
+        doc.dossier_tier = tier
+        doc.dossier_date = date_str
+        doc.cover_prompt = user_prompt
+        doc.cover_logo_path = logo_path
+        doc.build(story, onLaterPages=draw_dossier_body_background, canvasmaker=PageNumCanvas)
         buffer.seek(0)
         return Response(content=buffer.getvalue(), media_type="application/pdf")
 

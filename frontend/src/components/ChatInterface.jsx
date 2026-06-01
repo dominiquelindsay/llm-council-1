@@ -293,6 +293,7 @@ const ChatInterface = ({ conversation, onSendMessage, onClearHistory, isLoading,
 
   const triggerExport = async (format) => {
     if (!conversation?.messages?.length) return alert("NO_DATA_TO_EXTRACT");
+    const coverPrompt = conversation.messages.find(msg => msg.role === 'user')?.content?.split("\n\n[ OVERRIDE:")?.[0]?.trim() || "";
     try {
       const response = await fetch(`${API_BASE}/api/export`, {
         method: 'POST',
@@ -301,6 +302,7 @@ const ChatInterface = ({ conversation, onSendMessage, onClearHistory, isLoading,
           format: format,
           title: conversation.title || "UNNAMED_SESSION",
           messages: conversation.messages,
+          cover_prompt: coverPrompt,
           tier: intelligenceTier
         })
       });

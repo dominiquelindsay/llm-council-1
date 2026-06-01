@@ -218,7 +218,10 @@ function App() {
   };
 
   const handleExportDossier = async (format) => {
-    if (!currentConversation?.messages?.length) {
+    const visibleMessages = activeStreams[currentConversationId]?.messages || currentConversation?.messages || [];
+    const coverPrompt = visibleMessages.find(msg => msg.role === 'user')?.content?.split("\n\n[ OVERRIDE:")?.[0]?.trim() || "";
+
+    if (!visibleMessages.length) {
       alert("NO_DATA_TO_EXTRACT: There is no active conversation or data to compile.");
       return;
     }
@@ -229,7 +232,8 @@ function App() {
         body: JSON.stringify({
           format: format,
           title: currentConversation.title || "UNNAMED_SESSION",
-          messages: currentConversation.messages,
+          messages: visibleMessages,
+          cover_prompt: coverPrompt,
           tier: 'pro'
         })
       });
