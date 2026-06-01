@@ -916,6 +916,40 @@
 }
 
 @media (max-width: 760px) {
+  .mission-header {
+    padding: 16px 18px 18px;
+  }
+
+  .mission-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    justify-content: stretch;
+  }
+
+  .mission-actions button {
+    min-width: 0;
+    width: 100%;
+    padding: 12px 6px;
+    font-size: 9px;
+    letter-spacing: 1.4px;
+    white-space: nowrap;
+  }
+
+  .briefing-mode .mission-header {
+    grid-template-columns: 1fr;
+  }
+
+  .briefing-mode .mission-actions {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .briefing-mode .mission-title {
+    white-space: normal;
+    line-height: 1.25;
+  }
+
   .mission-status-grid {
     grid-template-columns: repeat(2, 1fr);
   }
