@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Splash from './Splash';
 import Radar from './Radar';
+import sidebarLogo from '../assets/sidebar_logo.png';
 
 const HudButton = ({ label, onClick, color = '#00f2ff', isActive = false }) => (
   <button 
@@ -238,6 +239,129 @@ const CinematicStage = ({ title, data, color }) => {
   );
 };
 
+const stripOperatorOverride = (text = '') => String(text).split("\n\n[ OVERRIDE:")[0].trim();
+
+const cleanPrintableText = (text = '') => String(text)
+  .replace(/<img[^>]*>/g, '[ Visual asset omitted from print dossier ]')
+  .replace(/<hr\/>/g, '\n')
+  .replace(/<br\/>/g, '\n')
+  .replace(/<h3>(.*?)<\/h3>/g, '\n$1\n')
+  .replace(/^#{1,6}\s+/gm, '')
+  .replace(/\*\*(.*?)\*\*/g, '$1')
+  .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '[ Visual asset: $1 ]')
+  .replace(/\\n/g, '\n')
+  .replace(/\\"/g, '"')
+  .trim();
+
+const getPrintableEntries = (data, fallbackLabel = 'RESPONSE') => {
+  if (!data) return [];
+
+  if (typeof data === 'string') {
+    return [{ label: fallbackLabel, text: data }];
+  }
+
+  if (Array.isArray(data)) {
+    return data.map((item, index) => ({
+      label: item?.model || `${fallbackLabel}_${index + 1}`,
+      text: item?.response || item?.ranking || JSON.stringify(item)
+    }));
+  }
+
+  if (typeof data === 'object') {
+    if (data.response) {
+      return [{ label: data.model || fallbackLabel, text: data.response }];
+    }
+    return Object.entries(data).map(([key, value]) => ({
+      label: value?.model || key,
+      text: value?.response || value?.ranking || (typeof value === 'string' ? value : JSON.stringify(value))
+    }));
+  }
+
+  return [{ label: fallbackLabel, text: String(data) }];
+};
+
+const PrintSection = ({ title, tone = 'cyan', entries }) => {
+  if (!entries?.length) return null;
+
+  return (
+    <section className={`print-section print-section-${tone}`}>
+      <div className="print-section-header">
+        <span>{title}</span>
+        <span>CONTROLLED COPY</span>
+      </div>
+      {entries.map((entry, index) => (
+        <article className="print-entry" key={`${title}-${entry.label}-${index}`}>
+          <div className="print-entry-label">{entry.label}</div>
+          <pre className="print-entry-body">{cleanPrintableText(entry.text)}</pre>
+        </article>
+      ))}
+    </section>
+  );
+};
+
+const PrintDossier = ({ conversation, tier = 'pro' }) => {
+  const messages = conversation?.messages || [];
+  if (!messages.length) return null;
+
+  const firstPrompt = stripOperatorOverride(messages.find(msg => msg.role === 'user')?.content || 'NO ACTIVE INQUIRY REGISTERED');
+  const title = conversation?.title || 'UNNAMED SESSION';
+  const extracted = new Date().toLocaleString();
+  const caseId = Array.from(title).reduce((acc, char) => ((acc << 5) - acc + char.charCodeAt(0)) >>> 0, 0).toString(16).toUpperCase().padStart(8, '0').slice(0, 8);
+
+  return (
+    <div className="print-dossier" aria-hidden="true">
+      <section className="print-cover">
+        <div className="print-cover-border">
+          <div className="print-cover-meta">
+            <div><span>No:</span> COUNCIL-{caseId}</div>
+            <div><span>Tier:</span> {tier.toUpperCase()}</div>
+          </div>
+          <div className="print-stamp print-stamp-top">TOP SECRET</div>
+          <div className="print-stamp print-stamp-eye">EYES ONLY</div>
+          <h1>CLASSIFIED</h1>
+          <div className="print-cover-subtitle">LLM COUNCIL // PRINT DOSSIER</div>
+          <div className="print-restriction-box">
+            <div>ALL INTELLIGENCE, RANKINGS, REASONING, AND SYNTHESIS ARE RESTRICTED</div>
+            <strong>SESSION TITLE: {title.toUpperCase()}</strong>
+          </div>
+          <img className="print-cover-logo" src={sidebarLogo} alt="Council seal" />
+          <div className="print-prompt-label">/// TARGET INQUIRY SIGNAL DIRECTIVE ///</div>
+          <div className="print-prompt-box">{firstPrompt}</div>
+          <div className="print-cover-footer">
+            <span>EXTRACTED: {extracted}</span>
+            <span>WHITE-STOCK FIELD COPY</span>
+          </div>
+        </div>
+      </section>
+
+      {messages.map((msg, index) => {
+        if (msg.role === 'user') {
+          return (
+            <PrintSection
+              key={`print-user-${index}`}
+              title="UPLINK INITIATED: USER OVERRIDE"
+              tone="gold"
+              entries={[{ label: 'OPERATOR QUERY', text: stripOperatorOverride(msg.content) }]}
+            />
+          );
+        }
+
+        if (msg.role === 'assistant') {
+          return (
+            <React.Fragment key={`print-assistant-${index}`}>
+              <PrintSection title="STAGE 1: INDEPENDENT ANALYSIS" tone="cyan" entries={getPrintableEntries(msg.stage1, 'COUNCIL_AGENT')} />
+              <PrintSection title="STAGE 2: PEER REVIEW & CRITIQUE" tone="red" entries={getPrintableEntries(msg.stage2, 'PEER_REVIEW')} />
+              <PrintSection title="STAGE 3: FINAL SYNTHESIS" tone="black" entries={getPrintableEntries(msg.stage3 || msg.content, 'ARBITER')} />
+            </React.Fragment>
+          );
+        }
+
+        return null;
+      })}
+    </div>
+  );
+};
+
 const ChatInterface = ({ conversation, onSendMessage, onClearHistory, isLoading, splashKey, onOpenMobileSidebar, showRadar, setShowRadar, visualEngine, setVisualEngine }) => {
   const [inputValue, setInputValue] = useState('');
   const [intelligenceTier, setIntelligenceTier] = useState('pro');
@@ -337,6 +461,7 @@ const ChatInterface = ({ conversation, onSendMessage, onClearHistory, isLoading,
 
   return (
     <div className="chat-interface" style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#020204', position: 'relative', overflow: 'hidden' }}>
+      <PrintDossier conversation={conversation} tier={intelligenceTier} />
       
       <style>
         {`

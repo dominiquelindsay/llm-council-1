@@ -413,6 +413,259 @@
   }
 }
 
+/* ==========================================================================
+   LOW-INK PRINT DOSSIER
+   ========================================================================== */
+.print-dossier {
+  display: none;
+}
+
+@media print {
+  @page {
+    size: letter;
+    margin: 0.45in;
+  }
+
+  html,
+  body,
+  #root {
+    width: auto !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    background: #ffffff !important;
+  }
+
+  body * {
+    visibility: hidden !important;
+  }
+
+  .app,
+  .chat-interface {
+    display: block !important;
+    width: auto !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    background: #ffffff !important;
+    color: #111827 !important;
+  }
+
+  .print-dossier,
+  .print-dossier * {
+    visibility: visible !important;
+  }
+
+  .print-dossier {
+    display: block !important;
+    position: absolute !important;
+    inset: 0 auto auto 0 !important;
+    width: 100% !important;
+    background: #ffffff !important;
+    color: #111827 !important;
+    font-family: "Courier New", Courier, monospace !important;
+    font-size: 9.5pt !important;
+    line-height: 1.42 !important;
+  }
+
+  .print-cover {
+    min-height: 9.9in;
+    page-break-after: always;
+    break-after: page;
+    display: flex;
+    align-items: stretch;
+  }
+
+  .print-cover-border {
+    position: relative;
+    width: 100%;
+    min-height: 9.65in;
+    border: 3px solid #991b1b;
+    outline: 1px solid #991b1b;
+    outline-offset: -10px;
+    padding: 0.38in;
+  }
+
+  .print-cover-meta {
+    font-size: 7.5pt;
+    font-weight: 700;
+    line-height: 1.8;
+    width: 2.7in;
+  }
+
+  .print-cover-meta span {
+    color: #991b1b;
+    display: inline-block;
+    min-width: 0.42in;
+  }
+
+  .print-stamp {
+    position: absolute;
+    border: 2px solid #991b1b;
+    color: #991b1b;
+    font-family: Arial, Helvetica, sans-serif;
+    font-weight: 900;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 0.08in 0.16in;
+    border-radius: 5px;
+  }
+
+  .print-stamp-top {
+    top: 0.55in;
+    right: 0.48in;
+    font-size: 18pt;
+    transform: rotate(-4deg);
+  }
+
+  .print-stamp-eye {
+    top: 1.28in;
+    left: 0.55in;
+    font-size: 15pt;
+    transform: rotate(4deg);
+  }
+
+  .print-cover h1 {
+    margin: 0.75in 0 0;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 49pt;
+    line-height: 0.95;
+    text-align: center;
+    letter-spacing: 0;
+  }
+
+  .print-cover-subtitle {
+    margin-top: 0.1in;
+    color: #991b1b;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 11pt;
+    font-weight: 800;
+    text-align: center;
+  }
+
+  .print-restriction-box {
+    margin: 0.28in auto 0;
+    max-width: 5.7in;
+    border: 2px solid #111827;
+    padding: 0.16in 0.2in;
+    text-align: center;
+    font-size: 7.5pt;
+    font-weight: 700;
+  }
+
+  .print-restriction-box strong {
+    display: block;
+    margin-top: 0.08in;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 9pt;
+  }
+
+  .print-cover-logo {
+    display: block;
+    width: 1.65in;
+    height: 1.65in;
+    object-fit: contain;
+    margin: 0.3in auto 0;
+    filter: grayscale(100%) contrast(1.15);
+  }
+
+  .print-prompt-label {
+    margin-top: 0.34in;
+    color: #991b1b;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 11pt;
+    font-weight: 900;
+    text-align: center;
+  }
+
+  .print-prompt-box {
+    margin: 0.18in auto 0;
+    max-width: 5.7in;
+    border: 2px solid #991b1b;
+    padding: 0.15in 0.22in;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 10pt;
+    font-style: italic;
+    text-align: center;
+  }
+
+  .print-cover-footer {
+    position: absolute;
+    left: 0.42in;
+    right: 0.42in;
+    bottom: 0.35in;
+    display: flex;
+    justify-content: space-between;
+    font-size: 7pt;
+    font-weight: 800;
+  }
+
+  .print-section {
+    margin: 0 0 0.28in;
+    page-break-inside: auto;
+    break-inside: auto;
+  }
+
+  .print-section-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.2in;
+    border: 2px solid #111827;
+    border-left-width: 0.12in;
+    padding: 0.08in 0.12in;
+    margin-bottom: 0.12in;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 9pt;
+    font-weight: 900;
+    letter-spacing: 0.7px;
+    text-transform: uppercase;
+  }
+
+  .print-section-cyan .print-section-header {
+    border-left-color: #0891b2;
+  }
+
+  .print-section-red .print-section-header {
+    border-left-color: #991b1b;
+  }
+
+  .print-section-gold .print-section-header {
+    border-left-color: #b45309;
+  }
+
+  .print-section-black .print-section-header {
+    border-left-color: #111827;
+  }
+
+  .print-entry {
+    border: 1px solid #cbd5e1;
+    border-left: 4px solid #111827;
+    padding: 0.14in 0.16in;
+    margin: 0 0 0.15in;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  .print-entry-label {
+    margin-bottom: 0.08in;
+    color: #991b1b;
+    font-size: 7.5pt;
+    font-weight: 900;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+  }
+
+  .print-entry-body {
+    margin: 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+    color: #111827;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 9.5pt;
+    line-height: 1.45;
+  }
+}
+
 /* 2. Sidebar Sliding Drawer & Blur Backdrop Overlay */
 .sidebar-overlay {
   display: none;
@@ -726,4 +979,4 @@
     grid-template-columns: 1fr !important;
     gap: 15px !important;
   }
-}
+}
