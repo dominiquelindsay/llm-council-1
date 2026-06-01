@@ -64,6 +64,119 @@ const NeuralTimer = ({ timers = {}, loading = {} }) => {
   );
 };
 
+const shortModelName = (model = 'UNKNOWN') => {
+  const cleaned = String(model).split('/').pop() || String(model);
+  return cleaned.replace(/[-_:]/g, ' ').toUpperCase();
+};
+
+const getStageStatus = (assistant, key) => {
+  if (assistant?.loading?.[key]) return 'ACTIVE';
+  if (assistant?.[key]) return 'LOCKED';
+  return 'PENDING';
+};
+
+const getConversationStats = (conversation) => {
+  const messages = conversation?.messages || [];
+  const userTurns = messages.filter(msg => msg.role === 'user').length;
+  const assistantTurns = messages.filter(msg => msg.role === 'assistant').length;
+  const latestAssistant = [...messages].reverse().find(msg => msg.role === 'assistant') || null;
+  const stage1Count = Array.isArray(latestAssistant?.stage1) ? latestAssistant.stage1.length : 0;
+  const stage2Count = Array.isArray(latestAssistant?.stage2) ? latestAssistant.stage2.length : 0;
+  const stage3Ready = Boolean(latestAssistant?.stage3 || latestAssistant?.content);
+  return { messages, userTurns, assistantTurns, latestAssistant, stage1Count, stage2Count, stage3Ready };
+};
+
+const MissionHeader = ({ conversation, intelligenceTier, visualEngine, isLoading, briefingMode, setBriefingMode, setShowCommandPalette, setShowDossierPreview }) => {
+  const stats = getConversationStats(conversation);
+  const title = conversation?.title || (conversation?.id ? 'ACTIVE DELIBERATION' : 'NO ACTIVE SESSION');
+  const sessionId = conversation?.id && conversation.id !== 'new' ? conversation.id.slice(0, 8).toUpperCase() : 'UNASSIGNED';
+  const readiness = stats.stage3Ready ? 'DOSSIER_READY' : isLoading ? 'COUNCIL_ACTIVE' : stats.messages.length ? 'ANALYSIS_HELD' : 'STANDBY';
+
+  return (
+    <div className="mission-header">
+      <div className="mission-title-block">
+        <div className="mission-eyebrow">COMMAND_MODULE // V12.0 ARBITER</div>
+        <div className="mission-title">{title.toUpperCase()}</div>
+      </div>
+      <div className="mission-status-grid">
+        <div><span>SESSION</span>{sessionId}</div>
+        <div><span>TIER</span>{intelligenceTier.toUpperCase()}</div>
+        <div><span>COUNCIL</span>{stats.stage1Count || 'STBY'}</div>
+        <div><span>PEERS</span>{stats.stage2Count || 'STBY'}</div>
+        <div><span>ENGINE</span>{visualEngine === 'none' ? 'OFFLINE' : 'VISUAL_ON'}</div>
+        <div className={isLoading ? 'status-hot' : ''}><span>STATE</span>{readiness}</div>
+      </div>
+      <div className="mission-actions">
+        <button type="button" onClick={() => setBriefingMode(!briefingMode)}>{briefingMode ? 'EXIT_BRIEF' : 'BRIEFING'}</button>
+        <button type="button" onClick={() => setShowDossierPreview(true)}>DOSSIER</button>
+        <button type="button" onClick={() => setShowCommandPalette(true)}>CMD</button>
+      </div>
+    </div>
+  );
+};
+
+const DeliberationCore = ({ assistant }) => {
+  if (!assistant) return null;
+  const stages = [
+    { key: 'stage1', label: 'S1', name: 'INDEPENDENT' },
+    { key: 'stage2', label: 'S2', name: 'PEER REVIEW' },
+    { key: 'stage3', label: 'S3', name: 'SYNTHESIS' }
+  ];
+  const active = assistant.loading?.stage1 || assistant.loading?.stage2 || assistant.loading?.stage3;
+  if (!active && !assistant.stage1) return null;
+
+  return (
+    <div className={`deliberation-core ${active ? 'core-active' : ''}`}>
+      <div className="core-rings">
+        {stages.map((stage, index) => (
+          <div key={stage.key} className={`core-ring core-ring-${index + 1} core-${getStageStatus(assistant, stage.key).toLowerCase()}`}>
+            <span>{stage.label}</span>
+          </div>
+        ))}
+        <div className="core-center">COUNCIL</div>
+      </div>
+      <div className="core-stage-readout">
+        {stages.map(stage => (
+          <div key={stage.key}>
+            <span>{stage.name}</span>
+            <strong>{getStageStatus(assistant, stage.key)}</strong>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const PeerReviewMatrix = ({ data }) => {
+  if (!Array.isArray(data) || data.length === 0) return null;
+  const rows = data.map((item, index) => ({
+    reviewer: shortModelName(item.model || `REVIEWER ${index + 1}`),
+    ranking: item.parsed_ranking || item.parsedRanking || []
+  })).filter(row => row.ranking.length);
+
+  if (!rows.length) return null;
+  const columns = [...new Set(rows.flatMap(row => row.ranking))];
+
+  return (
+    <div className="war-room-matrix">
+      <div className="matrix-title">PEER REVIEW WAR ROOM // ANONYMIZED RANK MATRIX</div>
+      <div className="matrix-grid" style={{ gridTemplateColumns: `minmax(140px, 1.2fr) repeat(${columns.length}, minmax(70px, .7fr))` }}>
+        <div className="matrix-cell matrix-head">REVIEWER</div>
+        {columns.map(col => <div key={col} className="matrix-cell matrix-head">{col.replace('Response ', 'RESP_')}</div>)}
+        {rows.map(row => (
+          <React.Fragment key={row.reviewer}>
+            <div className="matrix-cell matrix-reviewer">{row.reviewer}</div>
+            {columns.map(col => {
+              const rank = row.ranking.indexOf(col);
+              return <div key={`${row.reviewer}-${col}`} className={rank === 0 ? 'matrix-cell matrix-win' : 'matrix-cell'}>{rank >= 0 ? `#${rank + 1}` : '-'}</div>;
+            })}
+          </React.Fragment>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 const CinematicStage = ({ title, data, color }) => {
   const [activeModel, setActiveModel] = useState('');
 
@@ -192,30 +305,20 @@ const CinematicStage = ({ title, data, color }) => {
         {models.length === 1 && <span>{chairmanId.toUpperCase()}</span>}
       </div>
       {models.length > 1 && (
-        <div style={{ display: 'flex', borderBottom: '1px solid #1c1c22', background: '#0a0a0f', padding: '0 10px', overflowX: 'auto' }}>
+        <div className="agent-chip-row">
           {models.map(model => (
             <button
               key={model}
               onClick={() => setActiveModel(model)}
-              style={{
-                padding: '12px 15px',
-                background: 'transparent',
-                color: activeModel === model ? '#ffb000' : '#666',
-                border: 'none',
-                borderBottom: activeModel === model ? '2px solid #ffb000' : '2px solid transparent',
-                cursor: 'pointer',
-                fontFamily: 'monospace',
-                fontSize: '11px',
-                fontWeight: activeModel === model ? 'bold' : 'normal',
-                transition: 'all 0.2s',
-                whiteSpace: 'nowrap'
-              }}
+              className={`agent-chip ${activeModel === model ? 'active' : ''}`}
             >
-              {model.toUpperCase()}
+              <span>{shortModelName(model)}</span>
+              <small>LOCKED // {String(parsedData[model] || '').length}B</small>
             </button>
           ))}
         </div>
       )}
+      {title.includes('PEER REVIEW') && <PeerReviewMatrix data={Array.isArray(data) ? data : []} />}
       <div style={{ padding: '25px', color: '#e0e0e0', fontSize: '14px', lineHeight: '1.7', whiteSpace: 'pre-wrap' }}>
         {formatTextWithThumbnails(mainContent)}
         
@@ -362,10 +465,82 @@ const PrintDossier = ({ conversation, tier = 'pro' }) => {
   );
 };
 
+const CommandPalette = ({ open, onClose, commands }) => {
+  const [query, setQuery] = useState('');
+
+  useEffect(() => {
+    if (open) setQuery('');
+  }, [open]);
+
+  if (!open) return null;
+  const filtered = commands.filter(cmd => `${cmd.label} ${cmd.meta}`.toLowerCase().includes(query.toLowerCase()));
+
+  return (
+    <div className="command-palette-backdrop" onClick={onClose}>
+      <div className="command-palette" onClick={(e) => e.stopPropagation()}>
+        <div className="palette-header">
+          <span>COMMAND PALETTE</span>
+          <button type="button" onClick={onClose}>CLOSE</button>
+        </div>
+        <input autoFocus value={query} onChange={(e) => setQuery(e.target.value)} placeholder="TYPE COMMAND..." />
+        <div className="palette-list">
+          {filtered.map(cmd => (
+            <button key={cmd.label} type="button" onClick={() => { cmd.run(); onClose(); }}>
+              <span>{cmd.label}</span>
+              <small>{cmd.meta}</small>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const DossierPreview = ({ open, onClose, conversation, tier, onExport }) => {
+  if (!open) return null;
+  const stats = getConversationStats(conversation);
+  const prompt = stripOperatorOverride(stats.messages.find(msg => msg.role === 'user')?.content || 'NO ACTIVE INQUIRY REGISTERED');
+  const estimatedPages = Math.max(2, 1 + stats.userTurns + stats.stage1Count + stats.stage2Count + (stats.stage3Ready ? 1 : 0));
+
+  return (
+    <div className="dossier-preview-backdrop" onClick={onClose}>
+      <div className="dossier-preview" onClick={(e) => e.stopPropagation()}>
+        <div className="preview-cover-card">
+          <div className="preview-stamp">TOP SECRET</div>
+          <img src={sidebarLogo} alt="Council seal" />
+          <strong>CLASSIFIED</strong>
+          <span>COUNCIL DOSSIER // {tier.toUpperCase()}</span>
+        </div>
+        <div className="preview-control-panel">
+          <div className="preview-header">
+            <span>DOSSIER PREVIEW</span>
+            <button type="button" onClick={onClose}>CLOSE</button>
+          </div>
+          <div className="preview-title">{(conversation?.title || 'UNNAMED SESSION').toUpperCase()}</div>
+          <p>{prompt}</p>
+          <div className="preview-stats">
+            <div><span>PAGES</span>{estimatedPages}</div>
+            <div><span>STAGE 1</span>{stats.stage1Count}</div>
+            <div><span>STAGE 2</span>{stats.stage2Count}</div>
+            <div><span>FINAL</span>{stats.stage3Ready ? 'READY' : 'PENDING'}</div>
+          </div>
+          <div className="preview-actions">
+            <button type="button" onClick={() => { onExport('pdf'); onClose(); }}>EXPORT PDF</button>
+            <button type="button" onClick={() => { window.print(); onClose(); }}>PRINT FIELD COPY</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const ChatInterface = ({ conversation, onSendMessage, onClearHistory, isLoading, splashKey, onOpenMobileSidebar, showRadar, setShowRadar, visualEngine, setVisualEngine }) => {
   const [inputValue, setInputValue] = useState('');
   const [intelligenceTier, setIntelligenceTier] = useState('pro');
   const [showExportMenu, setShowExportMenu] = useState(false);
+  const [showCommandPalette, setShowCommandPalette] = useState(false);
+  const [showDossierPreview, setShowDossierPreview] = useState(false);
+  const [briefingMode, setBriefingMode] = useState(false);
   const [stagedFiles, setStagedFiles] = useState([]);
   const [isDragging, setIsDragging] = useState(false); 
   
@@ -375,6 +550,21 @@ const ChatInterface = ({ conversation, onSendMessage, onClearHistory, isLoading,
   const API_BASE = 'http://localhost:5000';
 
   useEffect(() => { if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight; }, [conversation?.messages, isLoading]);
+
+  useEffect(() => {
+    const handleKeydown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setShowCommandPalette(true);
+      }
+      if (e.key === 'Escape') {
+        setShowCommandPalette(false);
+        setShowDossierPreview(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeydown);
+    return () => window.removeEventListener('keydown', handleKeydown);
+  }, []);
 
   const isSplash = (!conversation || conversation.id === undefined);
   const isUplinkEstablished = (conversation && (!conversation.messages || conversation.messages.length === 0) && !isLoading);
@@ -459,9 +649,22 @@ const ChatInterface = ({ conversation, onSendMessage, onClearHistory, isLoading,
     }
   };
 
+  const stats = getConversationStats(conversation);
+  const latestAssistant = stats.latestAssistant;
+  const commands = [
+    { label: 'Open System Radar', meta: 'MODEL ROSTER // CAPACITY', run: () => setShowRadar(true) },
+    { label: briefingMode ? 'Exit Briefing Mode' : 'Enter Briefing Mode', meta: 'FOCUS READING SURFACE', run: () => setBriefingMode(prev => !prev) },
+    { label: 'Preview Dossier', meta: 'EXPORT // PRINT CONTROL', run: () => setShowDossierPreview(true) },
+    { label: 'Export PDF Dossier', meta: 'CINEMATIC MANILA FILE', run: () => triggerExport('pdf') },
+    { label: 'Print Field Copy', meta: 'LOW INK WHITE STOCK', run: () => window.print() },
+    { label: visualEngine === 'none' ? 'Enable Visual Engine' : 'Disable Visual Engine', meta: 'DALL-E IMAGE HANDOFF', run: () => setVisualEngine(prev => prev === 'dall-e-3' ? 'none' : 'dall-e-3') }
+  ];
+
   return (
-    <div className="chat-interface" style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#020204', position: 'relative', overflow: 'hidden' }}>
+    <div className={`chat-interface ${briefingMode ? 'briefing-mode' : ''}`} style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#020204', position: 'relative', overflow: 'hidden' }}>
       <PrintDossier conversation={conversation} tier={intelligenceTier} />
+      <CommandPalette open={showCommandPalette} onClose={() => setShowCommandPalette(false)} commands={commands} />
+      <DossierPreview open={showDossierPreview} onClose={() => setShowDossierPreview(false)} conversation={conversation} tier={intelligenceTier} onExport={triggerExport} />
       
       <style>
         {`
@@ -488,12 +691,20 @@ const ChatInterface = ({ conversation, onSendMessage, onClearHistory, isLoading,
         `}
       </style>
 
-      <div className="chat-header-bar">
-        <div className="chat-header-title">COMMAND_MODULE // V11.0 ARBITER</div>
-      </div>
+      <MissionHeader
+        conversation={conversation}
+        intelligenceTier={intelligenceTier}
+        visualEngine={visualEngine}
+        isLoading={isLoading}
+        briefingMode={briefingMode}
+        setBriefingMode={setBriefingMode}
+        setShowCommandPalette={setShowCommandPalette}
+        setShowDossierPreview={setShowDossierPreview}
+      />
 
       <div style={{ flex: 1, position: 'relative', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
         {showRadar && <Radar onClose={() => setShowRadar(false)} />}
+        {!isSplash && latestAssistant && <DeliberationCore assistant={latestAssistant} />}
         {isSplash ? <Splash key={splashKey} onOpenMobileSidebar={onOpenMobileSidebar} /> : isUplinkEstablished ? (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
             
