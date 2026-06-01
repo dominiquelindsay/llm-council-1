@@ -168,129 +168,28 @@ def extract_document_text(file_bytes: bytes, filename: str) -> str:
     except Exception as e:
         return f"[Error extracting text: {str(e)}]"
 
-# --- PDF CINEMATIC CYBERNETIC CANVAS (LIGHT BLUEPRINT MODE - PRINTER FRIENDLY) ---
-class CinematicCanvas(canvas.Canvas):
-    is_dark = False # Class variable to toggle themes dynamically
-    
+# --- PDF PAGE NUMBER GENERATOR (PAGE X OF Y) ---
+class PageNumCanvas(canvas.Canvas):
     def __init__(self, *args, **kwargs):
         canvas.Canvas.__init__(self, *args, **kwargs)
         self.pages = []
-        self.draw_background_and_grid()
         
     def showPage(self):
         self.pages.append(dict(self.__dict__))
         self._startPage()
-        self.draw_background_and_grid()
         
     def save(self):
         page_count = len(self.pages)
         for page in self.pages:
             self.__dict__.update(page)
-            self.draw_watermarks(page_count)
+            self.draw_page_number(page_count)
             canvas.Canvas.showPage(self)
         canvas.Canvas.save(self)
         
-    def draw_background_and_grid(self):
-        w, h = LETTER
-        margin = 36
-        
-        if self.is_dark:
-            # Draw deep dark background
-            self.setFillColor(colors.HexColor('#020204'))
-            self.rect(0, 0, w, h, fill=True, stroke=False)
-            
-            # Draw subtle neon-cyan grid
-            self.setStrokeColor(colors.Color(0.0, 0.95, 1.0, alpha=0.03))
-            self.setLineWidth(0.5)
-            for x in range(0, int(w), 40):
-                self.line(x, 0, x, h)
-            for y in range(0, int(h), 40):
-                self.line(0, y, w, y)
-                
-            # Draw cybernetic glowing corner frames/brackets
-            self.setStrokeColor(colors.Color(0.0, 0.95, 1.0, alpha=0.12))
-            self.setLineWidth(0.5)
-            self.rect(margin, margin, w - 2 * margin, h - 2 * margin, fill=False, stroke=True)
-            
-            self.setStrokeColor(colors.HexColor('#00f2ff'))
-        else:
-            # Draw clean white background (Saves 100% of background ink!)
-            self.setFillColor(colors.HexColor('#ffffff'))
-            self.rect(0, 0, w, h, fill=True, stroke=False)
-            
-            # Draw very subtle blueprint-style light slate/cyan grid
-            self.setStrokeColor(colors.Color(0.0, 0.4, 0.5, alpha=0.03))
-            self.setLineWidth(0.5)
-            for x in range(0, int(w), 40):
-                self.line(x, 0, x, h)
-            for y in range(0, int(h), 40):
-                self.line(0, y, w, y)
-                
-            # Draw cybernetic corner frames/brackets in dark cyan
-            self.setStrokeColor(colors.Color(0.0, 0.4, 0.5, alpha=0.10))
-            self.setLineWidth(0.5)
-            self.rect(margin, margin, w - 2 * margin, h - 2 * margin, fill=False, stroke=True)
-            
-            self.setStrokeColor(colors.HexColor('#006677'))
-            
-        # Draw Corner Tech Brackets (uses active stroke color set above)
-        self.setLineWidth(1.2)
-        bracket_len = 12
-        
-        # Top-Left Corner
-        self.line(margin, h - margin, margin + bracket_len, h - margin)
-        self.line(margin, h - margin, margin, h - margin - bracket_len)
-        
-        # Top-Right Corner
-        self.line(w - margin, h - margin, w - margin - bracket_len, h - margin)
-        self.line(w - margin, h - margin, w - margin, h - margin - bracket_len)
-        
-        # Bottom-Left Corner
-        self.line(margin, margin, margin + bracket_len, margin)
-        self.line(margin, margin, margin, margin + bracket_len)
-        
-        # Bottom-Right Corner
-        self.line(w - margin, margin, w - margin - bracket_len, margin)
-        self.line(w - margin, margin, w - margin, margin + bracket_len)
-
-    def draw_watermarks(self, page_count):
-        w, h = LETTER
-        margin = 36
-        
-        # Draw headers and footers only on page 2+ (Leaving cover page clean)
-        if self._pageNumber > 1:
-            if self.is_dark:
-                # Top Header Watermarks
-                self.setFont("Helvetica-Bold", 8)
-                self.setFillColor(colors.HexColor('#00f2ff'))
-                self.drawString(margin + 10, h - margin - 15, "CLASSIFIED SYSTEM INTEL // ARBITER V11.0")
-                
-                self.setFillColor(colors.HexColor('#ffb000'))
-                self.drawRightString(w - margin - 10, h - margin - 15, "TOP SECRET // LEVEL 5 SECURITY")
-                
-                # Bottom Footer Watermarks
-                self.setFont("Helvetica-Bold", 8)
-                self.setFillColor(colors.Color(1.0, 1.0, 1.0, alpha=0.5))
-                self.drawString(margin + 10, margin + 12, "RESTRICTED DISTRIBUTION // INTEL COLLECTIVE")
-                
-                self.setFillColor(colors.HexColor('#00f2ff'))
-                self.drawRightString(w - margin - 10, margin + 12, f"LOG EXTRACT // PAGE {self._pageNumber} OF {page_count}")
-            else:
-                # Top Header Watermarks (Dark cyan and dark orange)
-                self.setFont("Helvetica-Bold", 8)
-                self.setFillColor(colors.HexColor('#006677'))
-                self.drawString(margin + 10, h - margin - 15, "CLASSIFIED SYSTEM INTEL // ARBITER V11.0")
-                
-                self.setFillColor(colors.HexColor('#cc5500'))
-                self.drawRightString(w - margin - 10, h - margin - 15, "TOP SECRET // LEVEL 5 SECURITY")
-                
-                # Bottom Footer Watermarks
-                self.setFont("Helvetica-Bold", 8)
-                self.setFillColor(colors.HexColor('#556677'))
-                self.drawString(margin + 10, margin + 12, "RESTRICTED DISTRIBUTION // INTEL COLLECTIVE")
-                
-                self.setFillColor(colors.HexColor('#006677'))
-                self.drawRightString(w - margin - 10, margin + 12, f"LOG EXTRACT // PAGE {self._pageNumber} OF {page_count}")
+    def draw_page_number(self, page_count):
+        self.setFont("Helvetica-Bold", 9)
+        self.setFillColorRGB(0.5, 0.5, 0.5)
+        self.drawRightString(LETTER[0] - 72, 36, f"PAGE {self._pageNumber} OF {page_count}")
 
 
 # --- DOCX PAGE NUMBER GENERATOR (PAGE X OF Y) ---
@@ -533,305 +432,54 @@ async def export_dossier(payload: dict = Body(...)):
         
         return {"subject": f"COUNCIL_DOSSIER: {title}", "body": summary}
     
-    # Resolving path to the frontend logo for cover page (fall back to Pillow-compatible council-logo.jpg)
-    logo_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "frontend", "src", "assets", "council-logo.jpg")
-    if not os.path.exists(logo_path):
-        logo_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "frontend", "src", "assets", "sidebar_logo.png")
+    # Resolving path to the frontend logo for cover page
+    logo_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "frontend", "src", "assets", "sidebar_logo.png")
     
-    if fmt in ['pdf', 'pdf_dark']:
-        is_dark = (fmt == 'pdf_dark')
+    if fmt == 'pdf':
         buffer = io.BytesIO()
         doc = SimpleDocTemplate(buffer, pagesize=LETTER, rightMargin=72, leftMargin=72, topMargin=72, bottomMargin=72)
         
         styles = getSampleStyleSheet()
+        style_n = styles["Normal"]
+        style_n.leading = 14
+        style_n.spaceAfter = 10
         
-        # Color Palettes & Cinematic Typography (Dual-Theme Styles)
-        if is_dark:
-            style_n = ParagraphStyle('CustomNormal', parent=styles["Normal"], fontName='Helvetica', fontSize=10, leading=15, textColor='#e2e8f0', spaceAfter=10)
-            style_cover_title = ParagraphStyle('CoverTitle', fontName='Helvetica-Bold', fontSize=32, leading=38, textColor='#ffffff', alignment=TA_CENTER, spaceAfter=20)
-            style_cover_sub = ParagraphStyle('CoverSub', fontName='Helvetica-Bold', fontSize=13, textColor='#00f2ff', alignment=TA_CENTER, spaceAfter=8)
-            style_cover_meta = ParagraphStyle('CoverMeta', fontName='Helvetica', fontSize=11, textColor='#cbd5e1', alignment=TA_CENTER, spaceAfter=6)
-            
-            style_cyan_header = ParagraphStyle('CyanHeader', parent=styles['Heading2'], fontName='Helvetica-Bold', fontSize=16, textColor='#00f2ff', alignment=TA_CENTER, spaceBefore=20, spaceAfter=20)
-            style_orange_header = ParagraphStyle('OrangeHeader', parent=styles['Heading2'], fontName='Helvetica-Bold', fontSize=16, textColor='#ffb000', alignment=TA_CENTER, spaceBefore=20, spaceAfter=20)
-            style_arbiter = ParagraphStyle('Arbiter', parent=styles['Heading1'], fontName='Helvetica-Bold', fontSize=22, textColor='#00f2ff', alignment=TA_CENTER, spaceBefore=30, spaceAfter=30)
-            
-            style_cover_classification = ParagraphStyle(
-                'CoverClassification',
-                fontName='Helvetica-Bold',
-                fontSize=9,
-                leading=11,
-                textColor='#ffffff',
-                alignment=TA_CENTER,
-                backColor='#1c120c',
-                borderColor='#ffb000',
-                borderWidth=1,
-                borderPadding=6,
-                borderRadius=3,
-                spaceAfter=30
-            )
-            style_telemetry = ParagraphStyle(
-                'CoverTelemetry',
-                fontName='Courier-Bold',
-                fontSize=8,
-                leading=11,
-                textColor='#00f2ff',
-                alignment=TA_CENTER,
-                spaceAfter=25
-            )
-            style_cover_prompt_label = ParagraphStyle(
-                'CoverPromptLabel',
-                fontName='Helvetica-Bold',
-                fontSize=9,
-                textColor='#ffb000',
-                alignment=TA_CENTER,
-                spaceAfter=5
-            )
-            style_cover_prompt_body = ParagraphStyle(
-                'CoverPromptBody',
-                fontName='Helvetica-Oblique',
-                fontSize=10,
-                leading=14,
-                textColor='#ffe3a3',
-                alignment=TA_CENTER,
-                backColor='#1a1510',
-                borderColor='#ffb000',
-                borderWidth=1,
-                borderPadding=10,
-                borderRadius=4
-            )
-            style_suggestion = ParagraphStyle(
-                'Suggestion', 
-                fontName='Helvetica-Oblique', 
-                fontSize=11, 
-                leading=15,
-                textColor='#ffffff', 
-                leftIndent=20, 
-                rightIndent=20, 
-                spaceBefore=15,
-                spaceAfter=15,
-                backColor='#1c120c', 
-                borderColor='#ffb000', 
-                borderWidth=1, 
-                borderPadding=12,
-                borderRadius=4
-            )
-            style_list = ParagraphStyle('List', parent=style_n, leftIndent=20, textColor='#cbd5e1')
-            style_user_header = ParagraphStyle('UserHeader', fontName='Helvetica-Bold', fontSize=13, textColor='#ffb000', alignment=TA_CENTER, spaceBefore=10, spaceAfter=10)
-            style_user_body = ParagraphStyle(
-                'UserBody', 
-                fontName='Helvetica-Oblique', 
-                fontSize=11, 
-                leading=15,
-                textColor='#ffe3a3', 
-                alignment=TA_CENTER, 
-                leftIndent=40, 
-                rightIndent=40,
-                backColor='#1a1510',
-                borderColor='#ffb000',
-                borderWidth=1,
-                borderPadding=12,
-                borderRadius=4,
-                spaceBefore=10,
-                spaceAfter=20
-            )
-        else:
-            style_n = ParagraphStyle('CustomNormal', parent=styles["Normal"], fontName='Helvetica', fontSize=10, leading=15, textColor='#1f2937', spaceAfter=10)
-            style_cover_title = ParagraphStyle('CoverTitle', fontName='Helvetica-Bold', fontSize=32, leading=38, textColor='#111827', alignment=TA_CENTER, spaceAfter=20)
-            style_cover_sub = ParagraphStyle('CoverSub', fontName='Helvetica-Bold', fontSize=13, textColor='#006677', alignment=TA_CENTER, spaceAfter=8)
-            style_cover_meta = ParagraphStyle('CoverMeta', fontName='Helvetica', fontSize=11, textColor='#4b5563', alignment=TA_CENTER, spaceAfter=6)
-            
-            style_cyan_header = ParagraphStyle('CyanHeader', parent=styles['Heading2'], fontName='Helvetica-Bold', fontSize=16, textColor='#006677', alignment=TA_CENTER, spaceBefore=20, spaceAfter=20)
-            style_orange_header = ParagraphStyle('OrangeHeader', parent=styles['Heading2'], fontName='Helvetica-Bold', fontSize=16, textColor='#cc5500', alignment=TA_CENTER, spaceBefore=20, spaceAfter=20)
-            style_arbiter = ParagraphStyle('Arbiter', parent=styles['Heading1'], fontName='Helvetica-Bold', fontSize=22, textColor='#006677', alignment=TA_CENTER, spaceBefore=30, spaceAfter=30)
-            
-            style_cover_classification = ParagraphStyle(
-                'CoverClassification',
-                fontName='Helvetica-Bold',
-                fontSize=9,
-                leading=11,
-                textColor='#cc5500',
-                alignment=TA_CENTER,
-                backColor='#fff2e2',
-                borderColor='#f97316',
-                borderWidth=1,
-                borderPadding=6,
-                borderRadius=3,
-                spaceAfter=30
-            )
-            style_telemetry = ParagraphStyle(
-                'CoverTelemetry',
-                fontName='Courier-Bold',
-                fontSize=8,
-                leading=11,
-                textColor='#006677',
-                alignment=TA_CENTER,
-                spaceAfter=25
-            )
-            style_cover_prompt_label = ParagraphStyle(
-                'CoverPromptLabel',
-                fontName='Helvetica-Bold',
-                fontSize=9,
-                textColor='#cc5500',
-                alignment=TA_CENTER,
-                spaceAfter=5
-            )
-            style_cover_prompt_body = ParagraphStyle(
-                'CoverPromptBody',
-                fontName='Helvetica-Oblique',
-                fontSize=10,
-                leading=14,
-                textColor='#78350f',
-                alignment=TA_CENTER,
-                backColor='#fffbeb',
-                borderColor='#f59e0b',
-                borderWidth=1,
-                borderPadding=10,
-                borderRadius=4
-            )
-            style_suggestion = ParagraphStyle(
-                'Suggestion', 
-                fontName='Helvetica-Oblique', 
-                fontSize=11, 
-                leading=15,
-                textColor='#7c2d12', 
-                leftIndent=20, 
-                rightIndent=20, 
-                spaceBefore=15,
-                spaceAfter=15,
-                backColor='#fff7ed', 
-                borderColor='#f97316', 
-                borderWidth=1, 
-                borderPadding=12,
-                borderRadius=4
-            )
-            style_list = ParagraphStyle('List', parent=style_n, leftIndent=20, textColor='#374151')
-            style_user_header = ParagraphStyle('UserHeader', fontName='Helvetica-Bold', fontSize=13, textColor='#cc5500', alignment=TA_CENTER, spaceBefore=10, spaceAfter=10)
-            style_user_body = ParagraphStyle(
-                'UserBody', 
-                fontName='Helvetica-Oblique', 
-                fontSize=11, 
-                leading=15,
-                textColor='#78350f', 
-                alignment=TA_CENTER, 
-                leftIndent=40, 
-                rightIndent=40,
-                backColor='#fffbeb',
-                borderColor='#f59e0b',
-                borderWidth=1,
-                borderPadding=12,
-                borderRadius=4,
-                spaceBefore=10,
-                spaceAfter=20
-            )
+        # Color Palettes & Cinematic Typography
+        style_cover_title = ParagraphStyle('CoverTitle', fontName='Helvetica-Bold', fontSize=26, textColor='#000000', alignment=TA_CENTER, spaceAfter=20)
+        style_cover_sub = ParagraphStyle('CoverSub', fontName='Helvetica-Bold', fontSize=12, textColor='#00f2ff', alignment=TA_CENTER, spaceAfter=8)
+        style_cover_meta = ParagraphStyle('CoverMeta', fontName='Helvetica', fontSize=10, textColor='#888888', alignment=TA_CENTER)
+        
+        style_cyan_header = ParagraphStyle('CyanHeader', parent=styles['Heading2'], fontName='Helvetica-Bold', fontSize=14, textColor='#00f2ff', alignment=TA_CENTER, spaceBefore=20, spaceAfter=20)
+        style_orange_header = ParagraphStyle('OrangeHeader', parent=styles['Heading2'], fontName='Helvetica-Bold', fontSize=14, textColor='#ffb000', alignment=TA_CENTER, spaceBefore=20, spaceAfter=20)
+        style_arbiter = ParagraphStyle('Arbiter', parent=styles['Heading1'], fontName='Helvetica-Bold', fontSize=18, textColor='#00f2ff', alignment=TA_CENTER, spaceBefore=30, spaceAfter=30)
+        
+        style_suggestion = ParagraphStyle('Suggestion', fontName='Helvetica-Oblique', fontSize=11, textColor='#ffb000', leftIndent=20, rightIndent=20, spaceBefore=15)
+        style_list = ParagraphStyle('List', parent=style_n, leftIndent=20)
+        
+        # V10.3 specific user styles
+        style_user_header = ParagraphStyle('UserHeader', fontName='Helvetica-Bold', fontSize=12, textColor='#ffb000', alignment=TA_CENTER, spaceBefore=10, spaceAfter=10)
+        style_user_body = ParagraphStyle('UserBody', fontName='Helvetica-Oblique', fontSize=11, textColor='#444444', alignment=TA_CENTER, leftIndent=40, rightIndent=40)
         
         story = []
         
-        # --- THE DEDICATED TOP-SECRET CINEMATIC COVER SHEET ---
-        # 1. Extract the user's initial prompt safely
-        user_prompt = "NO ACTIVE INQUIRY REGISTERED"
-        for msg in messages:
-            if msg.get('role') == 'user':
-                user_prompt = msg.get('content', '').split("\n\n[ OVERRIDE:")[0] # Strip off any heavy backend parameters
-                break
-                
-        story.append(Spacer(1, 20))
+        # V10.3: The Cinematic Cover Page (Raised Title Block)
+        story.append(Spacer(1, 108)) # Reduced from 180 to 108 to lift an inch
+        story.append(Paragraph("COUNCIL_LOG", style_cover_sub))
+        story.append(Paragraph(title.upper(), style_cover_title))
+        story.append(Paragraph(f"INTELLIGENCE TIER: [ {tier} ]", style_cover_meta))
+        story.append(Paragraph(f"EXTRACTED: {date_str}", style_cover_meta))
+        story.append(Spacer(1, 40))
         
-        # 2. Top Red/Orange Security Classification Header Panel
-        style_cover_classification = ParagraphStyle(
-            'CoverClassification',
-            fontName='Helvetica-Bold',
-            fontSize=9,
-            leading=11,
-            textColor='#cc5500',
-            alignment=TA_CENTER,
-            backColor='#fff2e2',
-            borderColor='#f97316',
-            borderWidth=1,
-            borderPadding=6,
-            borderRadius=3,
-            spaceAfter=30
-        )
-        story.append(Paragraph("⚠️ [ SECURITY PROTOCOL: LEVEL 5 TOP SECRET // CLASSIFIED INTEL DIRECTIVE ]", style_cover_classification))
-        
-        # 3. Embed Center Sidebar Logo
+        # Embed physical logo if exists
         if os.path.exists(logo_path):
             try:
                 img = RLImage(logo_path)
-                img._restrictSize(120, 120)
+                img._restrictSize(220, 220)
                 img.hAlign = 'CENTER'
                 story.append(img)
-                story.append(Spacer(1, 15))
+                story.append(Spacer(1, 40))
             except Exception as e:
                 logger.warning(f"Could not load cover logo: {e}")
-                
-        # 4. Session Subtitle & Main Session Title Block
-        story.append(Paragraph("COUNCIL LOG DECRYPT // SESSION_LOG", style_cover_sub))
-        story.append(Paragraph(title.upper(), style_cover_title))
-        
-        # 5. Metadata Block (Tier, Extraction Date, and Secure Key)
-        style_cover_meta_box = ParagraphStyle(
-            'CoverMetaBox',
-            parent=style_cover_meta,
-            leading=16,
-            alignment=TA_CENTER,
-            spaceAfter=25
-        )
-        meta_html = (
-            f"<b>INTELLIGENCE TIER:</b> [ {tier} ] &nbsp;&nbsp;//&nbsp;&nbsp; "
-            f"<b>EXTRACTED:</b> {date_str}<br/>"
-            f"<b>UPLINK AUTH:</b> SECURE_KEY_{uuid.uuid4().hex[:8].upper()}"
-        )
-        story.append(Paragraph(meta_html, style_cover_meta_box))
-        
-        # 6. Decryption Telemetry Grid status bar
-        style_telemetry = ParagraphStyle(
-            'CoverTelemetry',
-            fontName='Courier-Bold',
-            fontSize=8,
-            leading=11,
-            textColor='#006677',
-            alignment=TA_CENTER,
-            spaceAfter=25
-        )
-        telemetry_text = (
-            "STATUS: SECURE_DECRYPT // 🔐 SYNCHRONIZED [████████████████] 100%<br/>"
-            "OPERATION_PROTOCOL: MULTI_COGNITIVE_DELIBERATION_ARBITOR_V11"
-        )
-        story.append(Paragraph(telemetry_text, style_telemetry))
-        
-        # 7. Prompt Target Inquiry Signal Block
-        style_cover_prompt_label = ParagraphStyle(
-            'CoverPromptLabel',
-            fontName='Helvetica-Bold',
-            fontSize=9,
-            textColor='#cc5500',
-            alignment=TA_CENTER,
-            spaceAfter=5
-        )
-        story.append(Paragraph("/// TARGET INQUIRY SIGNAL DIRECTIVE", style_cover_prompt_label))
-        
-        style_cover_prompt_body = ParagraphStyle(
-            'CoverPromptBody',
-            fontName='Helvetica-Oblique',
-            fontSize=10,
-            leading=14,
-            textColor='#78350f',
-            alignment=TA_CENTER,
-            backColor='#fffbeb',
-            borderColor='#f59e0b',
-            borderWidth=1,
-            borderPadding=10,
-            borderRadius=4
-        )
-        # Truncate extremely long prompts safely to prevent cover sheet overflow
-        clean_prompt = clean_body_text(user_prompt)
-        if len(clean_prompt) > 350:
-            clean_prompt = clean_prompt[:350] + "..."
-        story.append(Paragraph(saxutils.escape(clean_prompt), style_cover_prompt_body))
-        
-        # 8. Force Hard Page Break to separate Cover Page from Deliberation Logs
-        story.append(PageBreak())
         
         for idx, el in enumerate(elements):
             if el['type'] == 'user_header':
@@ -893,8 +541,7 @@ async def export_dossier(payload: dict = Body(...)):
                         safe_fallback = saxutils.escape(para.strip()).replace('\n', '<br/>')
                         story.append(Paragraph(safe_fallback, active_style))
                         
-        CinematicCanvas.is_dark = is_dark
-        doc.build(story, canvasmaker=CinematicCanvas)
+        doc.build(story, canvasmaker=PageNumCanvas)
         buffer.seek(0)
         return Response(content=buffer.getvalue(), media_type="application/pdf")
 
