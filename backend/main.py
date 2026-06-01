@@ -492,7 +492,7 @@ async def export_dossier(payload: dict = Body(...)):
         story = []
         
         # --- THE DEDICATED TOP-SECRET CLASSIFIED MANILA COVER SHEET ---
-        story.append(Spacer(1, 45))
+        story.append(Spacer(1, 15))
         
         # 1. Red rubber stamp looking "FOR YOUR EYE'S ONLY" text
         style_stamp = ParagraphStyle(
@@ -514,19 +514,19 @@ async def export_dossier(payload: dict = Body(...)):
         ]))
         stamp_table.hAlign = 'CENTER'
         story.append(stamp_table)
-        story.append(Spacer(1, 35))
+        story.append(Spacer(1, 15))
         
         # 2. Giant Sidebar Logo centered (occupies exactly 50% of the page height!)
         if os.path.exists(logo_path):
             try:
                 img = RLImage(logo_path)
-                img._restrictSize(366, 396) 
+                img._restrictSize(260, 280) 
                 img.hAlign = 'CENTER'
                 story.append(img)
             except Exception as e:
                 logger.warning(f"Could not load cover logo: {e}")
                 
-        story.append(Spacer(1, 40))
+        story.append(Spacer(1, 15))
         
         # 3. Original user prompt Signal Directive box lowered to the bottom of the page
         user_prompt = "NO ACTIVE INQUIRY REGISTERED"
