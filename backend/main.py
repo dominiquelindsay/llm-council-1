@@ -193,16 +193,28 @@ class PageNumCanvas(canvas.Canvas):
             self.setFillColor(colors.HexColor('#f5eedc')) # Premium manila folder cream/tan
             self.rect(0, 0, w, h, fill=True, stroke=False)
             
-            # Distressed red classification bands at top and bottom
-            self.setFillColor(colors.HexColor('#cc3333'))
-            self.rect(36, h - 50, w - 72, 14, fill=True, stroke=False)
-            self.rect(36, 36, w - 72, 14, fill=True, stroke=False)
+            # Distressed red double rounded border
+            self.setStrokeColor(colors.HexColor('#cc3333'))
+            self.setLineWidth(3)
+            self.roundRect(28, 28, w - 56, h - 56, 12, fill=False, stroke=True)
             
-            # Top/Bottom classification stamps
-            self.setFont("Helvetica-Bold", 8)
-            self.setFillColor(colors.HexColor('#ffffff'))
-            self.drawCentredString(w / 2.0, h - 47, "TOP SECRET // SECURITY PROTOCOL: LEVEL 5 // CLASSIFIED INTEL DIRECTIVE")
-            self.drawCentredString(w / 2.0, 39, "TOP SECRET // RESTRICTED DISTRIBUTION // SECURE RECORD")
+            self.setLineWidth(1)
+            self.roundRect(34, 34, w - 68, h - 68, 9, fill=False, stroke=True)
+            
+            # Top-Left metadata: No and Name fields resembling real file folder tags
+            self.setFont("Courier-Bold", 10)
+            self.setFillColor(colors.HexColor('#111827'))
+            session_title = getattr(self._doctemplate, 'session_title', 'UNNAMED_SESSION')
+            import hashlib
+            case_hash = hashlib.md5(session_title.encode('utf-8')).hexdigest()[:8].upper()
+            self.drawString(55, h - 75, f"No:   SECURE_KEY_{case_hash}")
+            self.drawString(55, h - 90, f"Name: FOR YOUR EYE'S ONLY")
+            
+            # Bottom corners regulatory reference codes
+            self.setFont("Courier-Bold", 8)
+            self.setFillColor(colors.HexColor('#111827'))
+            self.drawString(55, 52, "FORM-104 // CLASSIFIED SECURITY DIRECTIVE")
+            self.drawRightString(w - 55, 52, "NSN 7540-01-213-7901")
         else:
             self.setFont("Helvetica-Bold", 9)
             self.setFillColorRGB(0.5, 0.5, 0.5)
@@ -480,68 +492,77 @@ async def export_dossier(payload: dict = Body(...)):
         story = []
         
         # --- THE DEDICATED TOP-SECRET CLASSIFIED MANILA COVER SHEET ---
+        story.append(Spacer(1, 45))
+        
+        # 1. Red rubber stamp looking "FOR YOUR EYE'S ONLY" text
+        style_stamp = ParagraphStyle(
+            'StampText',
+            fontName='Helvetica-Bold',
+            fontSize=22,
+            leading=26,
+            textColor='#cc3333',
+            alignment=TA_CENTER
+        )
+        stamp_table = Table([[Paragraph("<b>FOR YOUR EYE'S ONLY</b>", style_stamp)]], colWidths=[280])
+        stamp_table.setStyle(TableStyle([
+            ('BOX', (0, 0), (-1, -1), 3, colors.HexColor('#cc3333')),
+            ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#f5eedc')),
+            ('PADDING', (0, 0), (-1, -1), 8),
+            ('TOPPADDING', (0, 0), (-1, -1), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ]))
+        stamp_table.hAlign = 'CENTER'
+        story.append(stamp_table)
         story.append(Spacer(1, 35))
         
-        # 1. Giant Sidebar Logo centered (occupies half the page height!)
+        # 2. Giant Sidebar Logo centered (occupies exactly 50% of the page height!)
         if os.path.exists(logo_path):
             try:
                 img = RLImage(logo_path)
-                img._restrictSize(300, 324) 
+                img._restrictSize(366, 396) 
                 img.hAlign = 'CENTER'
                 story.append(img)
-                story.append(Spacer(1, 15))
             except Exception as e:
                 logger.warning(f"Could not load cover logo: {e}")
                 
-        # 2. Main Title & Subtitle block
-        story.append(Paragraph("COUNCIL DECRYPT LOG // CLASSIFIED RECORD", style_cover_sub))
-        story.append(Paragraph(title.upper(), style_cover_title))
-        story.append(Spacer(1, 10))
+        story.append(Spacer(1, 40))
         
-        # 3. Retro Courier case file metadata block (typewriter style)
-        style_case_meta = ParagraphStyle(
-            'CoverMetaBox',
-            parent=style_cover_meta,
-            fontName='Courier-Bold',
-            fontSize=9,
-            leading=14,
-            textColor='#111827',
-            alignment=TA_CENTER,
-            spaceAfter=25
-        )
-        meta_html = (
-            f"CASE DIRECTIVE NO: SECURE_KEY_{uuid.uuid4().hex[:8].upper()}<br/>"
-            f"OPERATIONAL TIER: [ {tier} ] &nbsp;&nbsp;&nbsp;&nbsp;//&nbsp;&nbsp;&nbsp;&nbsp; EXTRACTED: {date_str}<br/>"
-            f"SECURITY PROTOCOL: LEVEL 5 // DECRYPT STATUS: SUCCESS"
-        )
-        story.append(Paragraph(meta_html, style_case_meta))
-        
-        # 4. Original user prompt Signal Directive box
+        # 3. Original user prompt Signal Directive box lowered to the bottom of the page
         user_prompt = "NO ACTIVE INQUIRY REGISTERED"
         for msg in messages:
             if msg.get('role') == 'user':
-                user_prompt = msg.get('content', '').split("\n\n[ OVERRIDE:")[0] # Strip off any heavy backend parameters
+                user_prompt = msg.get('content', '').split("\n\n[ OVERRIDE:")[0] # Strip off any heavy parameters
                 break
                 
-        story.append(Paragraph("/// TARGET INQUIRY SIGNAL DIRECTIVE ///", ParagraphStyle('CoverPromptLabel', fontName='Helvetica-Bold', fontSize=9, textColor='#cc3333', alignment=TA_CENTER, spaceAfter=5)))
+        story.append(Paragraph("/// TARGET INQUIRY SIGNAL DIRECTIVE ///", ParagraphStyle('CoverPromptLabel', fontName='Helvetica-Bold', fontSize=9, textColor='#cc3333', alignment=TA_CENTER, spaceAfter=8)))
         
         style_cover_prompt_body = ParagraphStyle(
             'CoverPromptBody',
             fontName='Helvetica-Oblique',
             fontSize=10,
             leading=14,
-            textColor='#444444',
-            alignment=TA_CENTER,
-            leftIndent=40,
-            rightIndent=40,
-            spaceAfter=20
+            textColor='#111827',
+            alignment=TA_CENTER
         )
-        clean_prompt = clean_body_text(user_prompt)
-        if len(clean_prompt) > 300:
-            clean_prompt = clean_prompt[:300] + "..."
-        story.append(Paragraph(saxutils.escape(clean_prompt), style_cover_prompt_body))
         
-        # 5. Hard Page Break so deliberations start on Page 2
+        clean_prompt = clean_body_text(user_prompt)
+        if len(clean_prompt) > 280:
+            clean_prompt = clean_prompt[:280] + "..."
+            
+        prompt_table = Table([[Paragraph(saxutils.escape(clean_prompt), style_cover_prompt_body)]], colWidths=[440])
+        prompt_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#ffffff')),
+            ('BOX', (0, 0), (-1, -1), 1.5, colors.HexColor('#cc3333')),
+            ('PADDING', (0, 0), (-1, -1), 10),
+            ('TOPPADDING', (0, 0), (-1, -1), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ]))
+        prompt_table.hAlign = 'CENTER'
+        story.append(prompt_table)
+        
+        # 4. Hard Page Break so deliberations start on Page 2
         story.append(PageBreak())
         
         for idx, el in enumerate(elements):
@@ -604,6 +625,7 @@ async def export_dossier(payload: dict = Body(...)):
                         safe_fallback = saxutils.escape(para.strip()).replace('\n', '<br/>')
                         story.append(Paragraph(safe_fallback, active_style))
                         
+        doc.session_title = title
         doc.build(story, canvasmaker=PageNumCanvas)
         buffer.seek(0)
         return Response(content=buffer.getvalue(), media_type="application/pdf")
