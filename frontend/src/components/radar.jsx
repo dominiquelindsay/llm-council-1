@@ -26,7 +26,18 @@ const Radar = ({ onClose }) => {
   const [unlockError, setUnlockError] = useState('');
 
   const TIERS = ['fast', 'pro', 'omega', 'god'];
-  const TARGET_PROVIDERS = ["openai", "google", "anthropic", "x-ai", "perplexity", "qwen", "nvidia", "openrouter"];
+  const TARGET_PROVIDERS = ["openai", "google", "anthropic", "x-ai", "perplexity", "qwen", "deepseek", "moonshotai", "nvidia", "openrouter"];
+  const PROVIDER_LABELS = {
+    qwen: "QWEN_VL",
+    moonshotai: "KIMI",
+    deepseek: "DEEPSEEK"
+  };
+  const PROVIDER_ACCENTS = {
+    QWEN_VL: "#bc13fe",
+    KIMI: "#ffb000",
+    DEEPSEEK: "#00ff41"
+  };
+  const getProviderAccent = (provider) => PROVIDER_ACCENTS[provider] || "#00f2ff";
 
   const requestRadarUnlock = (reason, action) => {
     if (isMobile) {
@@ -101,7 +112,7 @@ const Radar = ({ onClose }) => {
             providerModels.unshift({ id: 'openrouter/hunter-alpha', name: 'OpenRouter Hunter Alpha' });
           }
           
-          const displayLabel = p === "qwen" ? "QWEN_VL" : p.toUpperCase();
+          const displayLabel = PROVIDER_LABELS[p] || p.toUpperCase();
           
           const finalModels = providerModels.slice(0, 5);
           
@@ -223,7 +234,7 @@ const Radar = ({ onClose }) => {
     }
     .quarantined-card .tier-radio-btn { opacity: 0.2; pointer-events: none; }
     
-    .qwen-accent { border-left: 3px solid #bc13fe; }
+    .provider-accent { border-left: 3px solid var(--provider-accent); }
 
     .tier-radio-group {
       display: flex;
@@ -714,12 +725,12 @@ const Radar = ({ onClose }) => {
           {Object.entries(providers).map(([provider, models]) => (
             <div key={provider} style={{ display: 'flex', flexDirection: 'column' }}>
               <div style={{ 
-                color: provider === "QWEN_VL" ? "#bc13fe" : "#00f2ff", 
+                color: getProviderAccent(provider),
                 fontSize: '16px', 
                 fontWeight: '900', 
                 letterSpacing: '4px', 
                 marginBottom: '25px', 
-                borderBottom: `1px solid ${provider === "QWEN_VL" ? "#bc13fe66" : "#00f2ff33"}`, 
+                borderBottom: `1px solid ${getProviderAccent(provider)}66`,
                 paddingBottom: '10px', 
                 textAlign: 'center' 
               }}>
@@ -751,7 +762,11 @@ const Radar = ({ onClose }) => {
                 }
 
                 return (
-                  <div key={m.slug} className={`radar-card ${provider === "QWEN_VL" ? "qwen-accent" : ""} ${isCurrentlyActive ? 'active-in-tier' : ''} ${isQuarantined ? 'quarantined-card' : ''}`} style={{ opacity: cardOpacity }}>
+                  <div
+                    key={m.slug}
+                    className={`radar-card ${PROVIDER_ACCENTS[provider] ? "provider-accent" : ""} ${isCurrentlyActive ? 'active-in-tier' : ''} ${isQuarantined ? 'quarantined-card' : ''}`}
+                    style={{ opacity: cardOpacity, '--provider-accent': getProviderAccent(provider) }}
+                  >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                       <div style={{ color: '#fff', fontSize: '13px', fontWeight: 'bold' }}>{m.name}</div>
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
@@ -776,7 +791,7 @@ const Radar = ({ onClose }) => {
                     </div>
                     
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div style={{ color: provider === "QWEN_VL" ? "#bc13fe" : "#00f2ff", fontSize: '11px', opacity: 0.6, fontFamily: 'monospace' }}>
+                      <div style={{ color: getProviderAccent(provider), fontSize: '11px', opacity: 0.6, fontFamily: 'monospace' }}>
                         {m.slug}
                       </div>
                       <button 
