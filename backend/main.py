@@ -43,7 +43,7 @@ from reportlab.pdfgen import canvas
 from reportlab.lib import colors
 from PIL import Image
 
-from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Body
+from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Body, Header
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, Response, FileResponse
@@ -863,6 +863,11 @@ async def run_peer_review(model_name: str, original_prompt: str, council_respons
 # --- COUNCIL CONFIGURATION MEMORY SYNC ENDPOINTS ---
 from .config import DATA_DIR
 COUNCIL_MEMORY_PATH = os.path.join(os.path.dirname(DATA_DIR), "council_memory.json")
+RADAR_ADMIN_PASSWORD = os.getenv("RADAR_ADMIN_PASSWORD", "council")
+
+def verify_radar_password(password: str | None):
+    if not password or password != RADAR_ADMIN_PASSWORD:
+        raise HTTPException(status_code=403, detail="RADAR_COMMAND_SEAL_REQUIRED")
 
 @app.get("/api/council-memory")
 async def get_council_memory():
@@ -874,8 +879,14 @@ async def get_council_memory():
             logger.error(f"Error reading council_memory.json: {e}")
     return []
 
+@app.post("/api/radar-auth")
+async def unlock_radar(x_radar_password: str | None = Header(default=None)):
+    verify_radar_password(x_radar_password)
+    return {"success": True}
+
 @app.post("/api/council-memory")
-async def save_council_memory(payload: List[dict] = Body(...)):
+async def save_council_memory(payload: List[dict] = Body(...), x_radar_password: str | None = Header(default=None)):
+    verify_radar_password(x_radar_password)
     try:
         os.makedirs(os.path.dirname(COUNCIL_MEMORY_PATH), exist_ok=True)
         with open(COUNCIL_MEMORY_PATH, 'w') as f:

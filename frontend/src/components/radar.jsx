@@ -19,9 +19,68 @@ const Radar = ({ onClose }) => {
   const [activeFilter, setActiveFilter] = useState('ALL');
   const [lastSync, setLastSync] = useState(() => localStorage.getItem('radar_last_sync') || null);
   const [purgeTarget, setPurgeTarget] = useState(null);
+  const [radarPassword, setRadarPassword] = useState(() => sessionStorage.getItem('radar_command_seal') || '');
+  const [isRadarUnlocked, setIsRadarUnlocked] = useState(() => sessionStorage.getItem('radar_unlocked') === 'true');
+  const [unlockPrompt, setUnlockPrompt] = useState(null);
+  const [unlockInput, setUnlockInput] = useState('');
+  const [unlockError, setUnlockError] = useState('');
 
   const TIERS = ['fast', 'pro', 'omega', 'god'];
   const TARGET_PROVIDERS = ["openai", "google", "anthropic", "x-ai", "perplexity", "qwen", "nvidia", "openrouter"];
+
+  const requestRadarUnlock = (reason, action) => {
+    if (isMobile) {
+      setToast("TACTICAL LOCK: Visit operations_control_panel to modify radar settings.");
+      setTimeout(() => setToast(null), 3500);
+      return;
+    }
+    if (isRadarUnlocked && radarPassword) {
+      action(radarPassword);
+      return;
+    }
+    setUnlockError('');
+    setUnlockInput('');
+    setUnlockPrompt({ reason, action });
+  };
+
+  const submitRadarUnlock = async (e) => {
+    e.preventDefault();
+    const password = unlockInput.trim();
+    if (!password) {
+      setUnlockError('COMMAND SEAL REQUIRED.');
+      return;
+    }
+    try {
+      const SERVER_URL = import.meta.env.VITE_API_URL || window.location.origin;
+      const response = await fetch(`${SERVER_URL}/api/radar-auth`, {
+        method: 'POST',
+        headers: { 'X-Radar-Password': password }
+      });
+      if (!response.ok) throw new Error('AUTH_REJECTED');
+      sessionStorage.setItem('radar_command_seal', password);
+      sessionStorage.setItem('radar_unlocked', 'true');
+      setRadarPassword(password);
+      setIsRadarUnlocked(true);
+      const action = unlockPrompt?.action;
+      setUnlockPrompt(null);
+      setUnlockInput('');
+      setUnlockError('');
+      if (action) action(password);
+      setToast("RADAR COMMAND SEAL ACCEPTED.");
+      setTimeout(() => setToast(null), 2500);
+    } catch (error) {
+      setUnlockError('ACCESS DENIED // INVALID COMMAND SEAL.');
+    }
+  };
+
+  const lockRadar = () => {
+    sessionStorage.removeItem('radar_command_seal');
+    sessionStorage.removeItem('radar_unlocked');
+    setRadarPassword('');
+    setIsRadarUnlocked(false);
+    setToast("RADAR SETTINGS LOCKED.");
+    setTimeout(() => setToast(null), 2500);
+  };
 
   useEffect(() => {
     const fetchModels = async () => {
@@ -88,7 +147,17 @@ const Radar = ({ onClose }) => {
       setTimeout(() => setToast(null), 3500);
       return;
     }
-    const res = toggleTierMember(tier, modelId);
+    if (!isRadarUnlocked || !radarPassword) {
+      requestRadarUnlock(`ALLOCATE ${tier.toUpperCase()} SEAT`, (password) => {
+        const res = toggleTierMember(tier, modelId, password);
+        if (!res.success) {
+          setToast(res.error);
+          setTimeout(() => setToast(null), 3500);
+        }
+      });
+      return;
+    }
+    const res = toggleTierMember(tier, modelId, radarPassword);
     if (!res.success) {
       setToast(res.error);
       setTimeout(() => setToast(null), 3500);
@@ -107,7 +176,15 @@ const Radar = ({ onClose }) => {
        setTimeout(() => setToast(null), 3500);
        return;
     }
-    TIERS.forEach(t => updateTierChairman(t, slug));
+    if (!isRadarUnlocked || !radarPassword) {
+      requestRadarUnlock("ASSIGN GLOBAL ARBITER", (password) => {
+        TIERS.forEach(t => updateTierChairman(t, slug, password));
+        setToast(`GLOBAL ARBITER LOCKED: ${slug}`);
+        setTimeout(() => setToast(null), 2500);
+      });
+      return;
+    }
+    TIERS.forEach(t => updateTierChairman(t, slug, radarPassword));
     setToast(`GLOBAL ARBITER LOCKED: ${slug}`);
     setTimeout(() => setToast(null), 2500);
   };
@@ -260,6 +337,100 @@ const Radar = ({ onClose }) => {
       border-color: #ff003c;
       box-shadow: 0 0 10px rgba(255, 0, 60, 0.3);
     }
+    .radar-auth-btn {
+      background: rgba(0, 242, 255, 0.06);
+      color: #00f2ff;
+      border: 1px solid #00f2ff66;
+      padding: 9px 14px;
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: 2px;
+      cursor: pointer;
+      font-family: monospace;
+      border-radius: 2px;
+      transition: all 0.2s;
+    }
+    .radar-auth-btn.unlocked {
+      color: #00ff41;
+      border-color: #00ff41;
+      background: rgba(0, 255, 65, 0.08);
+      box-shadow: 0 0 12px rgba(0, 255, 65, 0.18);
+    }
+    .radar-auth-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.82);
+      backdrop-filter: blur(8px);
+    }
+    .radar-auth-panel {
+      width: min(520px, calc(100vw - 36px));
+      background: #050508;
+      border: 1px solid #00f2ff88;
+      box-shadow: 0 0 35px rgba(0, 242, 255, 0.2), inset 0 0 30px rgba(0, 242, 255, 0.05);
+      padding: 28px;
+      font-family: monospace;
+      color: #dffcff;
+    }
+    .radar-auth-panel h3 {
+      color: #00f2ff;
+      letter-spacing: 4px;
+      margin: 0 0 12px;
+      font-size: 16px;
+    }
+    .radar-auth-panel p {
+      color: #ffb000;
+      line-height: 1.6;
+      margin: 0 0 18px;
+      font-size: 11px;
+      letter-spacing: 1px;
+    }
+    .radar-auth-panel input {
+      width: 100%;
+      background: #000;
+      border: 1px solid #1c1c22;
+      color: #fff;
+      font-family: monospace;
+      font-size: 15px;
+      padding: 14px;
+      outline: none;
+      box-sizing: border-box;
+      margin-bottom: 12px;
+    }
+    .radar-auth-panel input:focus {
+      border-color: #00f2ff;
+      box-shadow: 0 0 12px rgba(0, 242, 255, 0.2);
+    }
+    .radar-auth-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+      margin-top: 14px;
+    }
+    .radar-auth-actions button {
+      background: transparent;
+      color: #00f2ff;
+      border: 1px solid #00f2ff66;
+      padding: 10px 16px;
+      cursor: pointer;
+      font-family: monospace;
+      font-weight: 900;
+      letter-spacing: 2px;
+    }
+    .radar-auth-actions button.confirm {
+      color: #050508;
+      background: #00f2ff;
+      border-color: #00f2ff;
+    }
+    .radar-auth-error {
+      color: #ff3e3e;
+      font-size: 11px;
+      letter-spacing: 1px;
+      min-height: 18px;
+    }
     .radar-control-tile.close-tile {
       border-color: #ff3e3e44;
       background: rgba(255, 62, 62, 0.04);
@@ -344,13 +515,52 @@ const Radar = ({ onClose }) => {
           [ COMMAND ] {toast}
         </div>
       )}
+
+      {unlockPrompt && (
+        <div className="radar-auth-modal">
+          <form className="radar-auth-panel" onSubmit={submitRadarUnlock}>
+            <h3>RADAR COMMAND SEAL</h3>
+            <p>
+              AUTHORIZATION REQUIRED TO MODIFY SYSTEM_RADAR SETTINGS.
+              <br />
+              REQUESTED ACTION: {unlockPrompt.reason}
+            </p>
+            <input
+              type="password"
+              autoFocus
+              value={unlockInput}
+              onChange={(e) => setUnlockInput(e.target.value)}
+              placeholder="ENTER_COMMAND_SEAL..."
+            />
+            <div className="radar-auth-error">{unlockError}</div>
+            <div className="radar-auth-actions">
+              <button type="button" onClick={() => setUnlockPrompt(null)}>[ ABORT ]</button>
+              <button type="submit" className="confirm">[ UNLOCK_RADAR ]</button>
+            </div>
+          </form>
+        </div>
+      )}
       
       <div className="radar-header-block" style={{ padding: '40px 60px 20px', textAlign: 'center', position: 'relative' }}>
         <div className="radar-status-text" style={{ color: '#00ff41', fontSize: '12px', letterSpacing: '8px', marginBottom: '10px', opacity: 0.6 }}>SYSTEM_STATUS: OMNISCIENT</div>
         <div className="radar-title" style={{ color: '#fff', fontSize: '28px', fontWeight: '900', letterSpacing: '12px', textShadow: '0 0 20px rgba(255,255,255,0.2)' }}>COUNCIL_RADAR_V11.0</div>
         {lastSync && (
-          <div className="last-sync-timestamp">
-            [ LAST_SYNC: {lastSync} ]
+        <div className="last-sync-timestamp">
+          [ LAST_SYNC: {lastSync} ]
+        </div>
+        )}
+        {!isMobile && (
+          <div style={{ marginTop: '18px', display: 'flex', justifyContent: 'center', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              className={`radar-auth-btn ${isRadarUnlocked ? 'unlocked' : ''}`}
+              onClick={() => isRadarUnlocked ? lockRadar() : requestRadarUnlock('UNLOCK RADAR SETTINGS', () => {})}
+            >
+              {isRadarUnlocked ? '[ RADAR_UNLOCKED // LOCK ]' : '[ SETTINGS_LOCKED // UNLOCK ]'}
+            </button>
+            <div style={{ color: isRadarUnlocked ? '#00ff41' : '#ffb000', fontFamily: 'monospace', fontSize: '10px', letterSpacing: '2px', fontWeight: 'bold' }}>
+              {isRadarUnlocked ? 'COMMAND_SEAL: ACCEPTED' : 'COMMAND_SEAL: REQUIRED_FOR_CHANGES'}
+            </div>
           </div>
         )}
         
@@ -429,7 +639,7 @@ const Radar = ({ onClose }) => {
                       setTimeout(() => setToast(null), 3500);
                       return;
                     }
-                    setPurgeTarget(f);
+                    requestRadarUnlock(`PURGE ${f}`, () => setPurgeTarget(f));
                   }}
                   style={{ whiteSpace: 'nowrap', width: '100%', borderRadius: '2px', fontSize: '8px', padding: '4px 6px' }}
                 >
@@ -577,7 +787,9 @@ const Radar = ({ onClose }) => {
                             setTimeout(() => setToast(null), 3500);
                             return;
                           }
-                          toggleQuarantine(m.slug);
+                          requestRadarUnlock(isQuarantined ? "RESTORE NODE" : "QUARANTINE NODE", (password) => {
+                            toggleQuarantine(m.slug, password);
+                          });
                         }}
                       >
                         {isQuarantined ? 'RESTORE_NODE' : 'QUARANTINE'}
@@ -638,7 +850,12 @@ const Radar = ({ onClose }) => {
                 [ ABORT ]
               </button>
               <button 
-                onClick={() => { purgeTierData(purgeTarget); setPurgeTarget(null); }}
+                onClick={() => {
+                  requestRadarUnlock(`CONFIRM PURGE ${purgeTarget}`, (password) => {
+                    purgeTierData(purgeTarget, password);
+                    setPurgeTarget(null);
+                  });
+                }}
                 style={{
                   background: '#ff003c',
                   color: '#fff',

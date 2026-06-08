@@ -167,7 +167,7 @@ export const CouncilProvider = ({ children }) => {
   }, [globalRoster]);
 
   // 4. Save function: Stores only modified models under the single key 'council_memory'
-  const saveRosterState = (roster) => {
+  const saveRosterState = (roster, radarPassword = null) => {
     const modified = roster.filter(item => (item.tiers && item.tiers.length > 0) || item.tier || item.isQuarantined || item.isArbiter)
                             .map(item => ({
                               modelId: item.modelId,
@@ -180,11 +180,11 @@ export const CouncilProvider = ({ children }) => {
 
     // Persist to backend server ONLY if we are NOT on mobile viewports (lock configurations on mobile!)
     const isMobile = window.innerWidth <= 768;
-    if (!isMobile) {
+    if (!isMobile && radarPassword) {
       const SERVER_URL = import.meta.env.VITE_API_URL || window.location.origin;
       fetch(`${SERVER_URL}/api/council-memory`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-Radar-Password': radarPassword },
         body: JSON.stringify(modified)
       }).catch(err => console.error("FAILED_TO_PERSIST_COUNCIL_ROSTER:", err));
     }
@@ -338,7 +338,7 @@ export const CouncilProvider = ({ children }) => {
   };
 
   // 7. Tier-Scoped Purge: Reset specific roster components and instantly update state and council_memory
-  const purgeTierData = (targetTier) => {
+  const purgeTierData = (targetTier, radarPassword = null) => {
     const currentRoster = rosterRef.current;
     let newRoster;
 
@@ -377,10 +377,10 @@ export const CouncilProvider = ({ children }) => {
     }
 
     setGlobalRoster(newRoster);
-    saveRosterState(newRoster);
+    saveRosterState(newRoster, radarPassword);
   };
 
-  const toggleTierMember = (tier, modelId) => {
+  const toggleTierMember = (tier, modelId, radarPassword = null) => {
     const currentRoster = rosterRef.current;
     const model = currentRoster.find(item => item.modelId === modelId);
 
@@ -401,7 +401,7 @@ export const CouncilProvider = ({ children }) => {
         return item;
       });
       setGlobalRoster(newRoster);
-      saveRosterState(newRoster);
+      saveRosterState(newRoster, radarPassword);
       return { success: true };
     } else {
       const currentTierCount = currentRoster.filter(item => {
@@ -420,12 +420,12 @@ export const CouncilProvider = ({ children }) => {
         return item;
       });
       setGlobalRoster(newRoster);
-      saveRosterState(newRoster);
+      saveRosterState(newRoster, radarPassword);
       return { success: true };
     }
   };
 
-  const updateTierChairman = (tier, modelId) => {
+  const updateTierChairman = (tier, modelId, radarPassword = null) => {
     const currentRoster = rosterRef.current;
     const model = currentRoster.find(item => item.modelId === modelId);
 
@@ -441,10 +441,10 @@ export const CouncilProvider = ({ children }) => {
       }
     });
     setGlobalRoster(newRoster);
-    saveRosterState(newRoster);
+    saveRosterState(newRoster, radarPassword);
   };
 
-  const toggleQuarantine = (modelId) => {
+  const toggleQuarantine = (modelId, radarPassword = null) => {
     const currentRoster = rosterRef.current;
     const newRoster = currentRoster.map(item => {
       if (item.modelId === modelId) {
@@ -460,7 +460,7 @@ export const CouncilProvider = ({ children }) => {
       return item;
     });
     setGlobalRoster(newRoster);
-    saveRosterState(newRoster);
+    saveRosterState(newRoster, radarPassword);
   };
 
   return (
