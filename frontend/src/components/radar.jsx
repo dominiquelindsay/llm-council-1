@@ -33,9 +33,16 @@ const Radar = ({ onClose }) => {
     deepseek: "DEEPSEEK"
   };
   const PROVIDER_ACCENTS = {
+    OPENAI: "#dffcff",
+    GOOGLE: "#4285f4",
+    ANTHROPIC: "#ff7a3d",
+    "X-AI": "#f5f7ff",
+    PERPLEXITY: "#20e0c4",
     QWEN_VL: "#bc13fe",
     KIMI: "#ffb000",
-    DEEPSEEK: "#00ff41"
+    DEEPSEEK: "#00ff41",
+    NVIDIA: "#76ff03",
+    OPENROUTER: "#00f2ff"
   };
   const getProviderAccent = (provider) => PROVIDER_ACCENTS[provider] || "#00f2ff";
 
@@ -211,21 +218,24 @@ const Radar = ({ onClose }) => {
     }
     .radar-card {
       background: #050508;
-      border: 1px solid #1c1c22;
+      border: 1px solid color-mix(in srgb, var(--provider-accent) 34%, #1c1c22);
+      border-left: 3px solid var(--provider-accent);
       border-radius: 4px;
       padding: 15px;
       margin-bottom: 15px;
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       position: relative;
+      box-shadow: inset 0 0 16px color-mix(in srgb, var(--provider-accent) 8%, transparent);
     }
     .radar-card:hover { 
-      border-color: #00f2ff; 
-      box-shadow: 0 0 15px rgba(0, 242, 255, 0.1); 
+      border-color: var(--provider-accent);
+      box-shadow: 0 0 18px color-mix(in srgb, var(--provider-accent) 22%, transparent), inset 0 0 18px color-mix(in srgb, var(--provider-accent) 10%, transparent);
       transform: translateY(-2px); 
     }
     .radar-card.active-in-tier {
       border-color: #bc13fe;
-      box-shadow: 0 0 20px rgba(188, 19, 254, 0.2);
+      border-left-color: var(--provider-accent);
+      box-shadow: 0 0 20px rgba(188, 19, 254, 0.28), inset 0 0 18px color-mix(in srgb, var(--provider-accent) 12%, transparent);
     }
     .radar-card.quarantined-card {
       border-color: #ff3e3e !important;
@@ -234,8 +244,6 @@ const Radar = ({ onClose }) => {
     }
     .quarantined-card .tier-radio-btn { opacity: 0.2; pointer-events: none; }
     
-    .provider-accent { border-left: 3px solid var(--provider-accent); }
-
     .tier-radio-group {
       display: flex;
       gap: 12px;
@@ -764,7 +772,7 @@ const Radar = ({ onClose }) => {
                 return (
                   <div
                     key={m.slug}
-                    className={`radar-card ${PROVIDER_ACCENTS[provider] ? "provider-accent" : ""} ${isCurrentlyActive ? 'active-in-tier' : ''} ${isQuarantined ? 'quarantined-card' : ''}`}
+                    className={`radar-card ${isCurrentlyActive ? 'active-in-tier' : ''} ${isQuarantined ? 'quarantined-card' : ''}`}
                     style={{ opacity: cardOpacity, '--provider-accent': getProviderAccent(provider) }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
